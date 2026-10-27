@@ -1,7 +1,14 @@
 import { Flame, MapPin, Trophy, Wallet, Zap } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Button } from "@/components/ui/button";
-import { getStats, getTodayQuest, PHOTO_BONUS } from "@/lib/quests";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+	getInterests,
+	getStats,
+	getTodayQuest,
+	PHOTO_BONUS,
+} from "@/lib/quests";
 import { signOut } from "./login/actions";
 import { QuestComplete } from "./quest-complete";
 
@@ -11,7 +18,12 @@ const one = <T,>(x: T | T[] | null | undefined) =>
 export default async function Home() {
 	// Per-user page: render at request time so time-based reads aren't prerendered.
 	await connection();
-	const [today, stats] = await Promise.all([getTodayQuest(), getStats()]);
+	const interests = await getInterests();
+	if (interests.length === 0) redirect("/interests");
+	const [today, stats] = await Promise.all([
+		getTodayQuest(interests),
+		getStats(),
+	]);
 	const quest = Array.isArray(today?.quests) ? today.quests[0] : today?.quests;
 	const emoji = one(quest?.interests)?.emoji;
 
@@ -27,11 +39,19 @@ export default async function Home() {
 				<h1 className="text-xl font-bold tracking-tight">
 					sidequest<span className="text-primary-ink">.</span>
 				</h1>
-				<form action={signOut}>
-					<Button type="submit" variant="ghost" size="sm">
-						Sign out
-					</Button>
-				</form>
+				<div className="flex">
+					<Link
+						href="/interests"
+						className={buttonVariants({ variant: "ghost", size: "sm" })}
+					>
+						Interests
+					</Link>
+					<form action={signOut}>
+						<Button type="submit" variant="ghost" size="sm">
+							Sign out
+						</Button>
+					</form>
+				</div>
 			</header>
 
 			<ul className="grid grid-cols-3 gap-2">
