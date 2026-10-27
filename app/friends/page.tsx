@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import {
 	getFeed,
 	getLeaderboard,
+	getMyGroups,
 	getRelations,
 	searchProfiles,
 } from "@/lib/friends";
-import { respondToRequest, sendRequest } from "./actions";
+import { leaveGroup, respondToRequest, sendRequest } from "./actions";
+import { JoinGroupForm } from "./join-group-form";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;
@@ -20,10 +22,11 @@ export default async function FriendsPage({
 }) {
 	await connection();
 	const { q = "" } = await searchParams;
-	const [relations, feed, board, results] = await Promise.all([
+	const [relations, feed, board, groups, results] = await Promise.all([
 		getRelations(),
 		getFeed(),
 		getLeaderboard(),
+		getMyGroups(),
 		q.trim().length >= 2 ? searchProfiles(q.trim()) : [],
 	]);
 
@@ -102,6 +105,32 @@ export default async function FriendsPage({
 					))}
 				</section>
 			)}
+
+			<section className="flex flex-col gap-2">
+				<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">
+					Groups
+				</h2>
+				{groups.map((g) => (
+					<div
+						key={g.id}
+						className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3"
+					>
+						<span className="font-semibold">
+							{g.name}
+							<span className="font-normal text-muted-foreground">
+								{" "}
+								· {g.members} {g.members === 1 ? "member" : "members"}
+							</span>
+						</span>
+						<form action={leaveGroup.bind(null, g.id)}>
+							<Button type="submit" variant="ghost" size="sm">
+								Leave
+							</Button>
+						</form>
+					</div>
+				))}
+				<JoinGroupForm />
+			</section>
 
 			<section className="flex flex-col gap-2">
 				<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">

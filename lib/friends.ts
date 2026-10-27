@@ -1,6 +1,8 @@
 import { PHOTO_BONUS, todayET } from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
 
+const one = <T>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);
+
 export async function searchProfiles(q: string) {
 	const supabase = await createClient();
 	const { data } = await supabase.rpc("search_profiles", { q });
@@ -104,6 +106,21 @@ export async function getLeaderboard() {
 		ids.add(f.requester_id === me ? f.addressee_id : f.requester_id);
 	}
 
+	// Group-mates count too. Look up my own groups first: the admin can read every
+	// membership, so filtering by my group ids keeps their board to their own groups.
+	const mine = await supabase
+		.from("group_members")
+		.select("group_id")
+		.eq("user_id", me);
+	const mates = await supabase
+		.from("group_members")
+		.select("user_id")
+		.in(
+			"group_id",
+			(mine.data ?? []).map((m) => m.group_id),
+		);
+	for (const m of mates.data ?? []) ids.add(m.user_id);
+
 	const points = new Map<string, number>();
 	for (const c of completions.data ?? []) {
 		const etDate = new Date(c.completed_at).toLocaleDateString("en-CA", {
@@ -125,4 +142,27 @@ export async function getLeaderboard() {
 			isMe: p.id === me,
 		}))
 		.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+}
+
+export async function getMyGroups() {
+	const supabase = await createClient();
+	const { data: claims } = await supabase.auth.getClaims();
+	const me = claims?.claims.sub as string;
+	const mine = await supabase
+		.from("group_members")
+		.select("group_id")
+		.eq("user_id", me);
+	const { data } = await supabase
+		.from("groups")
+		.select("id, name, group_members(count)")
+		.in(
+			"id",
+			(mine.data ?? []).map((m) => m.group_id),
+		)
+		.order("name");
+	return (data ?? []).map((g) => ({
+		id: g.id,
+		name: g.name,
+		members: one(g.group_members)?.count ?? 0,
+	}));
 }

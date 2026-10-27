@@ -3,7 +3,15 @@ import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
 import { areaLabel } from "@/lib/areas";
 import { createClient } from "@/lib/supabase/server";
-import { approveQuest, rejectQuest, setFeatureStatus } from "./actions";
+import {
+	approveQuest,
+	createGroup,
+	rejectQuest,
+	removeGroupMember,
+	rotateGroupCode,
+	setFeatureStatus,
+	setGroupJoinable,
+} from "./actions";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;
@@ -17,7 +25,7 @@ export default async function AdminPage() {
 	const { data: isAdmin } = await supabase.rpc("is_admin");
 	if (!isAdmin) notFound();
 
-	const [quests, pending, recent] = await Promise.all([
+	const [quests, pending, recent, groups] = await Promise.all([
 		supabase
 			.from("quests")
 			.select(
@@ -36,11 +44,79 @@ export default async function AdminPage() {
 			.neq("status", "pending")
 			.order("created_at", { ascending: false })
 			.limit(15),
+		supabase
+			.from("groups")
+			.select(
+				"id, name, code, joinable, group_members(user_id, profiles(display_name, username))",
+			)
+			.order("created_at"),
 	]);
 
 	return (
 		<main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col gap-8 p-6 pb-28">
 			<h1 className="text-4xl font-bold tracking-tight">Admin</h1>
+
+			<section className="flex flex-col gap-3">
+				<h2 className={heading}>Groups ({groups.data?.length ?? 0})</h2>
+				<form action={createGroup} className="flex gap-2">
+					<input
+						name="name"
+						placeholder="New group name"
+						maxLength={40}
+						required
+						className="h-12 min-w-0 flex-1 rounded-2xl border bg-card px-4 outline-none focus:border-ring"
+					/>
+					<Button type="submit" size="lg">
+						Create
+					</Button>
+				</form>
+				{groups.data?.map((g) => (
+					<div key={g.id} className={card}>
+						<div className="flex items-center justify-between gap-3">
+							<p className="text-xl font-bold">{g.name}</p>
+							<code className="rounded-lg bg-muted px-2 py-1 text-lg font-bold tracking-widest">
+								{g.code}
+							</code>
+						</div>
+						<p className="text-sm text-muted-foreground">
+							{g.group_members.length} members ·{" "}
+							{g.joinable ? "open to join" : "closed to new joins"}
+						</p>
+						<div className="flex gap-2">
+							<form action={rotateGroupCode.bind(null, g.id)}>
+								<Button type="submit" variant="outline" size="sm">
+									New code
+								</Button>
+							</form>
+							<form action={setGroupJoinable.bind(null, g.id, !g.joinable)}>
+								<Button type="submit" variant="outline" size="sm">
+									{g.joinable ? "Close joining" : "Open joining"}
+								</Button>
+							</form>
+						</div>
+						<ul className="flex flex-col gap-1">
+							{g.group_members.map((m) => {
+								const who = one(m.profiles);
+								return (
+									<li
+										key={m.user_id}
+										className="flex items-center justify-between text-sm"
+									>
+										<span>{who?.display_name ?? who?.username}</span>
+										<form
+											action={removeGroupMember.bind(null, g.id, m.user_id)}
+										>
+											<Button type="submit" variant="ghost" size="xs">
+												Remove
+											</Button>
+										</form>
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				))}
+			</section>
 
 			<section className="flex flex-col gap-3">
 				<h2 className={heading}>

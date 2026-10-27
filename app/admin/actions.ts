@@ -43,3 +43,32 @@ export async function setFeatureStatus(
 		.eq("id", id);
 	revalidatePath("/admin");
 }
+
+export async function createGroup(formData: FormData) {
+	const supabase = await adminClient();
+	const name = String(formData.get("name") ?? "").trim();
+	if (name.length >= 2) await supabase.rpc("create_group", { p_name: name });
+	revalidatePath("/admin");
+}
+
+export async function rotateGroupCode(groupId: string) {
+	const supabase = await adminClient();
+	await supabase.rpc("rotate_group_code", { p_group: groupId });
+	revalidatePath("/admin");
+}
+
+export async function setGroupJoinable(groupId: string, joinable: boolean) {
+	const supabase = await adminClient();
+	await supabase.from("groups").update({ joinable }).eq("id", groupId);
+	revalidatePath("/admin");
+}
+
+export async function removeGroupMember(groupId: string, userId: string) {
+	const supabase = await adminClient();
+	await supabase
+		.from("group_members")
+		.delete()
+		.eq("group_id", groupId)
+		.eq("user_id", userId);
+	revalidatePath("/admin");
+}
