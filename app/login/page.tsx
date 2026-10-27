@@ -1,11 +1,12 @@
 "use client";
 
+import { Compass } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authenticate } from "./actions";
 
 const field =
-	"h-12 rounded-2xl border-2 bg-card px-4 text-base outline-none focus:border-ring";
+	"h-12 rounded-2xl border bg-card px-4 text-base outline-none focus:border-ring";
 
 export default function LoginPage() {
 	const [mode, setMode] = useState<"login" | "signup">("login");
@@ -14,12 +15,12 @@ export default function LoginPage() {
 
 	return (
 		<main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
-			<div className="text-center">
-				<p className="text-7xl" aria-hidden>
-					🧭
-				</p>
-				<h1 className="text-4xl font-extrabold">SideQuest</h1>
-				<p className="text-muted-foreground">A little adventure, every day.</p>
+			<div className="flex flex-col items-center gap-3 text-center">
+				<Compass className="size-10 text-primary-ink" strokeWidth={2} />
+				<h1 className="text-5xl font-bold tracking-tight">
+					sidequest<span className="text-primary-ink">.</span>
+				</h1>
+				<p className="text-muted-foreground">A small adventure, every day.</p>
 			</div>
 			<form action={action} className="flex w-full max-w-xs flex-col gap-3">
 				<input type="hidden" name="mode" value={mode} />
@@ -51,7 +52,7 @@ export default function LoginPage() {
 					</p>
 				)}
 				<Button type="submit" size="lg" disabled={pending}>
-					{signup ? "Create account" : "Let's go!"}
+					{signup ? "Create account" : "Let's go"}
 				</Button>
 				<Button
 					type="button"

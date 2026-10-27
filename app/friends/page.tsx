@@ -1,3 +1,5 @@
+import { Zap } from "lucide-react";
+import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
 import { getFeed, getRelations, searchProfiles } from "@/lib/friends";
 import { respondToRequest, sendRequest } from "./actions";
@@ -10,6 +12,7 @@ export default async function FriendsPage({
 }: {
 	searchParams: Promise<{ q?: string }>;
 }) {
+	await connection();
 	const { q = "" } = await searchParams;
 	const [relations, feed, results] = await Promise.all([
 		getRelations(),
@@ -19,7 +22,7 @@ export default async function FriendsPage({
 
 	return (
 		<main className="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-6 pb-28">
-			<h1 className="text-3xl font-extrabold">Friends 👯</h1>
+			<h1 className="text-4xl font-bold tracking-tight">Friends</h1>
 
 			<section className="flex flex-col gap-2">
 				<form className="flex gap-2">
@@ -27,7 +30,7 @@ export default async function FriendsPage({
 						name="q"
 						defaultValue={q}
 						placeholder="Find a friend by name"
-						className="h-12 min-w-0 flex-1 rounded-2xl border-2 bg-card px-4 outline-none focus:border-ring"
+						className="h-12 min-w-0 flex-1 rounded-2xl border bg-card px-4 outline-none focus:border-ring"
 					/>
 					<Button type="submit" size="lg">
 						Search
@@ -44,7 +47,7 @@ export default async function FriendsPage({
 						<div key={p.id} className="flex items-center justify-between">
 							<span>{p.display_name ?? p.username}</span>
 							{state === "friend" ? (
-								<span className="text-sm">Friends ✓</span>
+								<span className="text-sm">Friends</span>
 							) : state ? (
 								<span className="text-sm text-muted-foreground">
 									{state === "sent" ? "Requested" : "Wants to be friends"}
@@ -63,7 +66,9 @@ export default async function FriendsPage({
 
 			{relations.incoming.length > 0 && (
 				<section className="flex flex-col gap-2">
-					<h2 className="text-lg font-extrabold">Requests</h2>
+					<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">
+						Requests
+					</h2>
 					{relations.incoming.map((r) => (
 						<div
 							key={r.requester_id}
@@ -92,7 +97,9 @@ export default async function FriendsPage({
 			)}
 
 			<section className="flex flex-col gap-3">
-				<h2 className="text-lg font-extrabold">Activity</h2>
+				<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">
+					Activity
+				</h2>
 				{feed.length === 0 && (
 					<p className="text-sm text-muted-foreground">
 						Nothing yet. Complete a quest, or add friends to see theirs!
@@ -103,7 +110,7 @@ export default async function FriendsPage({
 					return (
 						<article
 							key={item.id}
-							className="flex flex-col gap-2 rounded-3xl border-2 bg-card p-4"
+							className="flex flex-col gap-2 rounded-3xl border bg-card p-4"
 						>
 							<p>
 								<strong>{who?.display_name ?? who?.username}</strong> finished{" "}
@@ -118,7 +125,8 @@ export default async function FriendsPage({
 								/>
 							)}
 							<p className="text-sm text-muted-foreground">
-								+{item.pointsEarned} pts ·{" "}
+								<Zap className="mr-1 inline size-3.5 text-primary-ink" />
+								{item.pointsEarned} pts ·{" "}
 								{new Date(item.completed_at).toLocaleDateString("en-US", {
 									month: "short",
 									day: "numeric",

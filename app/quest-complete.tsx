@@ -1,25 +1,11 @@
 "use client";
 
+import { ArrowRight, Camera, Check } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { completeQuest } from "./actions";
-
-const BURST = [
-	"🎉",
-	"⭐",
-	"✨",
-	"🎊",
-	"🧭",
-	"🔥",
-	"⭐",
-	"🎉",
-	"✨",
-	"🎊",
-	"🧭",
-	"🔥",
-];
 
 // Phone photos are several MB; shrink to ~1280px JPEG before upload (bucket limit is 2 MB).
 async function shrink(file: File): Promise<Blob> {
@@ -85,44 +71,36 @@ export function QuestComplete({
 	if (done) {
 		return (
 			<div className="relative">
-				<p className="rounded-2xl bg-secondary px-4 py-3 text-center font-bold text-secondary-foreground">
-					+{earned} pts! 🎉 Come back tomorrow.
+				<p className="flex items-center justify-center gap-2 rounded-2xl border border-primary px-4 py-3 font-bold text-primary-ink">
+					<Check className="size-5" strokeWidth={3} />+{earned} pts earned
 				</p>
 				{celebrating && !reduceMotion && (
-					<div
+					<motion.span
 						aria-hidden
-						className="pointer-events-none absolute inset-0 overflow-visible"
-					>
-						{BURST.map((emoji, i) => {
-							const angle = (i / BURST.length) * Math.PI * 2;
-							return (
-								<motion.span
-									// biome-ignore lint/suspicious/noArrayIndexKey: static list, never reordered
-									key={i}
-									className="absolute top-1/2 left-1/2 text-2xl"
-									initial={{ x: 0, y: 0, opacity: 1, scale: 0.4 }}
-									animate={{
-										x: Math.cos(angle) * 130,
-										y: Math.sin(angle) * 130 - 40,
-										opacity: 0,
-										scale: 1.3,
-									}}
-									transition={{ duration: 1.2, ease: "easeOut" }}
-								>
-									{emoji}
-								</motion.span>
-							);
-						})}
-					</div>
+						className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-primary"
+						initial={{ scale: 1, opacity: 0.8 }}
+						animate={{ scale: 1.5, opacity: 0 }}
+						transition={{ duration: 0.9, ease: "easeOut" }}
+					/>
 				)}
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col gap-3">
-			<label className="flex cursor-pointer flex-col gap-1 rounded-2xl border-2 border-dashed px-4 py-3 text-center text-sm font-semibold">
-				{file ? `📸 ${file.name}` : `📸 Add a photo (+${bonus} pts)`}
+		<div className="flex flex-col gap-2">
+			{error && (
+				<p role="alert" className="text-sm text-destructive">
+					{error}
+				</p>
+			)}
+			<Button type="button" size="lg" onClick={submit} disabled={pending}>
+				{pending ? "Saving..." : "Complete quest"}
+				{!pending && <ArrowRight className="size-5" strokeWidth={2.5} />}
+			</Button>
+			<label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm font-semibold text-muted-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50">
+				<Camera className="size-4" />
+				{file ? file.name : `Add a photo, +${bonus} pts`}
 				<input
 					type="file"
 					accept="image/*"
@@ -131,14 +109,6 @@ export function QuestComplete({
 					onChange={(e) => setFile(e.target.files?.[0] ?? null)}
 				/>
 			</label>
-			{error && (
-				<p role="alert" className="text-sm text-destructive">
-					{error}
-				</p>
-			)}
-			<Button type="button" size="lg" onClick={submit} disabled={pending}>
-				{pending ? "Saving..." : "I did it! 🎯"}
-			</Button>
 		</div>
 	);
 }

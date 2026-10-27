@@ -7,8 +7,16 @@ export const PHOTO_BONUS = 5;
 const todayET = () =>
 	new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
-export async function getTodayQuest() {
+// RLS lets users read friends' completed quests and profiles, so every query
+// here must be scoped to the signed-in user explicitly.
+async function currentUser() {
 	const supabase = await createClient();
+	const { data } = await supabase.auth.getClaims();
+	return { supabase, uid: data?.claims.sub as string };
+}
+
+export async function getTodayQuest() {
+	const { supabase, uid } = await currentUser();
 	const today = todayET();
 
 	const fetchToday = () =>
@@ -17,6 +25,7 @@ export async function getTodayQuest() {
 			.select(
 				"id, status, photo_path, quests(title, description, area, cost, points, interests(emoji))",
 			)
+			.eq("user_id", uid)
 			.eq("assigned_on", today)
 			.maybeSingle();
 
@@ -24,7 +33,7 @@ export async function getTodayQuest() {
 	if (existing.data) return existing.data;
 
 	const [done, pool] = await Promise.all([
-		supabase.from("user_quests").select("quest_id"),
+		supabase.from("user_quests").select("quest_id").eq("user_id", uid),
 		supabase.from("quests").select("id"), // RLS limits this to approved quests
 	]);
 	const doneIds = new Set((done.data ?? []).map((r) => r.quest_id));
@@ -41,10 +50,11 @@ export async function getTodayQuest() {
 }
 
 export async function getStats() {
-	const supabase = await createClient();
+	const { supabase, uid } = await currentUser();
 	const { data } = await supabase
 		.from("profiles")
 		.select("points, current_streak, last_completed_on")
+		.eq("id", uid)
 		.maybeSingle();
 
 	const points = data?.points ?? 0;

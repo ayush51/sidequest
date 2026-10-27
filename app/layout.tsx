@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { BottomNav } from "@/components/bottom-nav";
 import "./globals.css";
 
-const nunito = Nunito({
+const spaceGrotesk = Space_Grotesk({
 	variable: "--font-sans",
 	subsets: ["latin"],
 });
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	themeColor: "#fbbf6a",
+	themeColor: "#0f1012",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
 	return (
-		<html lang="en" className={`${nunito.variable} h-full antialiased`}>
+		<html lang="en" className={`${spaceGrotesk.variable} h-full antialiased`}>
 			<body className="min-h-full flex flex-col">
 				{children}
 				<BottomNav />
