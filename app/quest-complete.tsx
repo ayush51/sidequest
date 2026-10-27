@@ -81,6 +81,7 @@ export function QuestComplete({
 						initial={{ scale: 1, opacity: 0.8 }}
 						animate={{ scale: 1.5, opacity: 0 }}
 						transition={{ duration: 0.9, ease: "easeOut" }}
+						onAnimationComplete={() => setCelebrating(false)}
 					/>
 				)}
 			</div>

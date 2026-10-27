@@ -1,16 +1,34 @@
-import { Flame, MapPin, Trophy, Wallet, Zap } from "lucide-react";
+import {
+	Flame,
+	MapPin,
+	Plus,
+	Shuffle,
+	Trophy,
+	Wallet,
+	Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
+	BONUS_LIMIT,
+	getBonuses,
 	getInterests,
 	getStats,
 	getTodayQuest,
 	PHOTO_BONUS,
 } from "@/lib/quests";
+import { claimBonusQuest, reroll } from "./actions";
 import { signOut } from "./login/actions";
 import { QuestComplete } from "./quest-complete";
+
+const AREAS: Record<string, string> = {
+	dc_other: "DC",
+	maryland_other: "Maryland",
+	virginia_other: "Virginia",
+};
+const areaLabel = (area: string) => AREAS[area] ?? area.replaceAll("_", " ");
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;
@@ -20,12 +38,17 @@ export default async function Home() {
 	await connection();
 	const interests = await getInterests();
 	if (interests.length === 0) redirect("/interests");
-	const [today, stats] = await Promise.all([
+	const [today, stats, bonuses] = await Promise.all([
 		getTodayQuest(interests),
 		getStats(),
+		getBonuses(),
 	]);
 	const quest = Array.isArray(today?.quests) ? today.quests[0] : today?.quests;
 	const emoji = one(quest?.interests)?.emoji;
+	const done = today?.status === "completed";
+	const canClaimBonus =
+		bonuses.length < BONUS_LIMIT &&
+		bonuses.every((b) => b.status === "completed");
 
 	const tiles = [
 		{ Icon: Zap, label: "Points", value: stats.points },
@@ -88,7 +111,7 @@ export default async function Home() {
 					<ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-muted-foreground">
 						<li className="flex items-center gap-1.5 capitalize">
 							<MapPin className="size-4" />
-							{quest.area.replaceAll("_", " ")}
+							{areaLabel(quest.area)}
 						</li>
 						<li className="flex items-center gap-1.5">
 							<Wallet className="size-4" />
@@ -102,12 +125,73 @@ export default async function Home() {
 					<QuestComplete
 						userQuestId={today.id}
 						bonus={PHOTO_BONUS}
-						done={today.status === "completed"}
+						done={done}
 						earned={quest.points + (today.photo_path ? PHOTO_BONUS : 0)}
 					/>
+					{!done && !today.rerolled && (
+						<form action={reroll}>
+							<Button
+								type="submit"
+								variant="ghost"
+								size="sm"
+								className="w-full text-muted-foreground"
+							>
+								<Shuffle className="size-4" />
+								Not feeling it? Reroll (1 left)
+							</Button>
+						</form>
+					)}
 				</section>
 			) : (
 				<p className="text-muted-foreground">No quests available yet.</p>
+			)}
+			{done && (
+				<section className="flex flex-col gap-3">
+					<p className="text-xs font-bold tracking-widest text-primary-ink uppercase">
+						Bonus round
+					</p>
+					{bonuses.map((b) => {
+						const bq = one(b.quests);
+						return bq ? (
+							<div
+								key={b.id}
+								className="flex flex-col gap-3 rounded-3xl border bg-card p-5"
+							>
+								<h3 className="text-2xl font-bold tracking-tight">
+									{bq.title}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{bq.description}
+								</p>
+								<QuestComplete
+									userQuestId={b.id}
+									bonus={PHOTO_BONUS}
+									done={b.status === "completed"}
+									earned={bq.points + (b.photo_path ? PHOTO_BONUS : 0)}
+								/>
+							</div>
+						) : null;
+					})}
+					{canClaimBonus ? (
+						<form action={claimBonusQuest}>
+							<Button
+								type="submit"
+								variant="outline"
+								size="lg"
+								className="w-full"
+							>
+								<Plus className="size-5" />
+								Get a bonus quest
+							</Button>
+						</form>
+					) : (
+						bonuses.length >= BONUS_LIMIT && (
+							<p className="text-center text-sm text-muted-foreground">
+								That's all the bonuses for today. Nice.
+							</p>
+						)
+					)}
+				</section>
 			)}
 		</main>
 	);

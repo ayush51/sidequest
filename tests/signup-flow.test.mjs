@@ -27,7 +27,7 @@ after(async () => {
 
 const path = () => new URL(page.url()).pathname;
 
-test("new user: signup -> interests -> first quest -> complete -> edit", async () => {
+test("new user: signup, interests, first quest, reroll, complete, bonuses, edit", async () => {
 	await page.goto(`${BASE}/login`);
 	await page.getByRole("button", { name: /Create account/ }).click();
 	await page.fill("input[name=name]", name);
@@ -48,16 +48,50 @@ test("new user: signup -> interests -> first quest -> complete -> edit", async (
 	assert.equal(await page.getByText("No quests available").count(), 0);
 	assert.ok((await page.locator("h2").first().textContent())?.length > 0);
 
+	// Reroll swaps the quest once, then the button disappears.
+	const firstTitle = await page.locator("h2").first().textContent();
+	await page.getByRole("button", { name: /Reroll/ }).click();
+	await page.waitForFunction(
+		(t) => document.querySelector("h2")?.textContent !== t,
+		firstTitle,
+	);
+	assert.equal(await page.getByRole("button", { name: /Reroll/ }).count(), 0);
+
 	await page.getByRole("button", { name: /Complete quest/ }).click();
 	await page.getByText(/pts earned/).waitFor();
 	const points = await page.locator("li", { hasText: "Points" }).textContent();
 	assert.ok(
-		!points.startsWith("0"),
+		!points?.startsWith("0"),
 		`points should be awarded, got: ${points}`,
+	);
+	assert.equal(await page.getByRole("button", { name: /Reroll/ }).count(), 0);
+
+	// Bonus round: two quick quests, then the limit message.
+	for (let n = 1; n <= 2; n++) {
+		await page.getByRole("button", { name: /Get a bonus quest/ }).click();
+		await page.getByRole("button", { name: /Complete quest/ }).waitFor();
+		await page.getByRole("button", { name: /Complete quest/ }).click();
+		await page
+			.getByText(/pts earned/)
+			.nth(n)
+			.waitFor();
+	}
+	await page.getByText(/all the bonuses for today/).waitFor();
+	assert.equal(
+		await page.getByRole("button", { name: /Get a bonus quest/ }).count(),
+		0,
 	);
 
 	await page.reload();
-	await page.getByText(/pts earned/).waitFor();
+	await page
+		.getByText(/pts earned/)
+		.first()
+		.waitFor();
+	assert.equal(
+		await page.getByText(/pts earned/).count(),
+		3,
+		"daily + 2 bonuses persist",
+	);
 
 	await page.getByRole("link", { name: "Interests" }).click();
 	await page.waitForURL(/\/interests/);
