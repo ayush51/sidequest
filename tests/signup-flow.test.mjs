@@ -93,7 +93,8 @@ test("new user: signup, interests, first quest, reroll, complete, bonuses, edit"
 		"daily + 2 bonuses persist",
 	);
 
-	await page.getByRole("link", { name: "Interests" }).click();
+	await page.getByRole("link", { name: "Profile" }).click();
+	await page.getByRole("link", { name: "Edit interests" }).click();
 	await page.waitForURL(/\/interests/);
 	await page
 		.locator("input[name=interest]")

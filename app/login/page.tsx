@@ -26,6 +26,7 @@ export default function LoginPage() {
 				<input type="hidden" name="mode" value={mode} />
 				<input
 					name="name"
+					defaultValue={state.name}
 					placeholder="Your name"
 					autoComplete="username"
 					required

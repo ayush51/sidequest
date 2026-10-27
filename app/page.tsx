@@ -7,10 +7,9 @@ import {
 	Wallet,
 	Zap,
 } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
 	BONUS_LIMIT,
 	getBonuses,
@@ -20,7 +19,6 @@ import {
 	PHOTO_BONUS,
 } from "@/lib/quests";
 import { claimBonusQuest, reroll } from "./actions";
-import { signOut } from "./login/actions";
 import { QuestComplete } from "./quest-complete";
 
 const AREAS: Record<string, string> = {
@@ -62,19 +60,6 @@ export default async function Home() {
 				<h1 className="text-xl font-bold tracking-tight">
 					sidequest<span className="text-primary-ink">.</span>
 				</h1>
-				<div className="flex">
-					<Link
-						href="/interests"
-						className={buttonVariants({ variant: "ghost", size: "sm" })}
-					>
-						Interests
-					</Link>
-					<form action={signOut}>
-						<Button type="submit" variant="ghost" size="sm">
-							Sign out
-						</Button>
-					</form>
-				</div>
 			</header>
 
 			<ul className="grid grid-cols-3 gap-2">

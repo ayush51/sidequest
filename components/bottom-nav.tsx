@@ -1,12 +1,13 @@
 "use client";
 
-import { Compass, Users } from "lucide-react";
+import { Compass, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
 	{ href: "/", label: "Today", Icon: Compass },
 	{ href: "/friends", label: "Friends", Icon: Users },
+	{ href: "/profile", label: "Profile", Icon: User },
 ];
 
 export function BottomNav() {

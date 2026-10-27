@@ -1,5 +1,6 @@
 import { Crown, Zap } from "lucide-react";
 import { connection } from "next/server";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import {
 	getFeed,
@@ -124,6 +125,7 @@ export default async function FriendsPage({
 									i + 1
 								)}
 							</span>
+							<Avatar url={row.avatarUrl} name={row.name} size={32} />
 							<span className="flex-1 font-semibold">
 								{row.name}
 								{row.isMe && (
@@ -155,10 +157,16 @@ export default async function FriendsPage({
 							key={item.id}
 							className="flex flex-col gap-2 rounded-3xl border bg-card p-4"
 						>
-							<p>
-								<strong>{who?.display_name ?? who?.username}</strong> finished{" "}
-								<strong>{one(item.quests)?.title}</strong>
-							</p>
+							<div className="flex items-center gap-3">
+								<Avatar
+									url={who?.avatar_url}
+									name={who?.display_name ?? who?.username ?? "?"}
+								/>
+								<p>
+									<strong>{who?.display_name ?? who?.username}</strong> finished{" "}
+									<strong>{one(item.quests)?.title}</strong>
+								</p>
+							</div>
 							{item.photoUrl && (
 								// biome-ignore lint/performance/noImgElement: signed URLs are short-lived, skip the image optimizer
 								<img

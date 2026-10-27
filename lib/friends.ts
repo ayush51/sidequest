@@ -44,7 +44,7 @@ export async function getFeed() {
 	const { data } = await supabase
 		.from("user_quests")
 		.select(
-			"id, user_id, completed_at, photo_path, profiles(username, display_name), quests(title, points)",
+			"id, user_id, completed_at, photo_path, profiles(username, display_name, avatar_url), quests(title, points)",
 		)
 		.eq("status", "completed")
 		.order("completed_at", { ascending: false })
@@ -91,7 +91,7 @@ export async function getLeaderboard() {
 			.from("friendships")
 			.select("requester_id, addressee_id")
 			.eq("status", "accepted"),
-		supabase.from("profiles").select("id, username, display_name"),
+		supabase.from("profiles").select("id, username, display_name, avatar_url"),
 		supabase
 			.from("user_quests")
 			.select("user_id, completed_at, photo_path, quests(points)")
@@ -120,6 +120,7 @@ export async function getLeaderboard() {
 		.map((p) => ({
 			id: p.id,
 			name: p.display_name ?? p.username,
+			avatarUrl: p.avatar_url,
 			points: points.get(p.id) ?? 0,
 			isMe: p.id === me,
 		}))

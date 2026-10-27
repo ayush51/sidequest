@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { credentials } from "@/lib/credentials";
 import { createClient } from "@/lib/supabase/server";
 
-export type AuthState = { error?: string };
+// `name` is returned so the form can keep it: React clears the fields after each submit.
+export type AuthState = { error?: string; name?: string };
 
 export async function authenticate(
 	_prev: AuthState,
@@ -16,26 +18,23 @@ export async function authenticate(
 	const pin = String(formData.get("pin") ?? "");
 
 	if (!/^[a-z0-9_]{3,20}$/.test(name)) {
-		return { error: "Name: 3-20 letters, numbers or underscores." };
+		return { name, error: "Name: 3-20 letters, numbers or underscores." };
 	}
-	if (!/^\d{4}$/.test(pin)) return { error: "Your code is 4 digits." };
+	if (!/^\d{4}$/.test(pin)) return { name, error: "Your code is 4 digits." };
 
-	// Supabase needs an email and a 6+ char password; derive both from name + code.
-	const credentials = {
-		email: `${name}@users.sidequest.app`,
-		password: `${name}:${pin}`,
-	};
+	const creds = credentials(name, pin);
 	const supabase = await createClient();
 	const { error } =
 		mode === "signup"
 			? await supabase.auth.signUp({
-					...credentials,
+					...creds,
 					options: { data: { username: name } },
 				})
-			: await supabase.auth.signInWithPassword(credentials);
+			: await supabase.auth.signInWithPassword(creds);
 
 	if (error) {
 		return {
+			name,
 			error:
 				mode === "signup"
 					? "That name is taken. Try another!"
