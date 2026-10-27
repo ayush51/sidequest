@@ -1,7 +1,12 @@
-import { Zap } from "lucide-react";
+import { Crown, Zap } from "lucide-react";
 import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
-import { getFeed, getRelations, searchProfiles } from "@/lib/friends";
+import {
+	getFeed,
+	getLeaderboard,
+	getRelations,
+	searchProfiles,
+} from "@/lib/friends";
 import { respondToRequest, sendRequest } from "./actions";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
@@ -14,9 +19,10 @@ export default async function FriendsPage({
 }) {
 	await connection();
 	const { q = "" } = await searchParams;
-	const [relations, feed, results] = await Promise.all([
+	const [relations, feed, board, results] = await Promise.all([
 		getRelations(),
 		getFeed(),
+		getLeaderboard(),
 		q.trim().length >= 2 ? searchProfiles(q.trim()) : [],
 	]);
 
@@ -95,6 +101,43 @@ export default async function FriendsPage({
 					))}
 				</section>
 			)}
+
+			<section className="flex flex-col gap-2">
+				<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">
+					This week
+				</h2>
+				<ol className="flex flex-col gap-2">
+					{board.map((row, i) => (
+						<li
+							key={row.id}
+							className={`flex items-center gap-3 rounded-2xl border bg-card px-4 py-3 ${
+								row.isMe ? "border-primary" : ""
+							}`}
+						>
+							<span className="w-6 text-center font-bold tabular-nums">
+								{i === 0 && row.points > 0 ? (
+									<Crown
+										className="mx-auto size-5 text-primary-ink"
+										aria-label="First place"
+									/>
+								) : (
+									i + 1
+								)}
+							</span>
+							<span className="flex-1 font-semibold">
+								{row.name}
+								{row.isMe && (
+									<span className="font-normal text-muted-foreground">
+										{" "}
+										(you)
+									</span>
+								)}
+							</span>
+							<span className="font-bold tabular-nums">{row.points}</span>
+						</li>
+					))}
+				</ol>
+			</section>
 
 			<section className="flex flex-col gap-3">
 				<h2 className="text-xs font-bold tracking-widest text-primary-ink uppercase">

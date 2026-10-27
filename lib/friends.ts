@@ -1,4 +1,4 @@
-import { PHOTO_BONUS } from "@/lib/quests";
+import { PHOTO_BONUS, todayET } from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
 
 export async function searchProfiles(q: string) {
@@ -68,4 +68,60 @@ export async function getFeed() {
 			(Array.isArray(i.quests) ? i.quests[0] : i.quests)?.points +
 			(i.photo_path ? PHOTO_BONUS : 0),
 	}));
+}
+
+// Points earned since Monday (Eastern) by you and your accepted friends.
+// RLS already limits user_quests and profiles to you and people connected to you.
+export async function getLeaderboard() {
+	const supabase = await createClient();
+	const { data: auth } = await supabase.auth.getClaims();
+	const me = auth?.claims.sub as string;
+
+	// Monday of this week as a YYYY-MM-DD string (compared against each completion's Eastern date).
+	const today = todayET();
+	const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
+	const weekStart = new Date(
+		Date.parse(`${today}T12:00:00Z`) - ((dow + 6) % 7) * 864e5,
+	)
+		.toISOString()
+		.slice(0, 10);
+
+	const [friendships, profiles, completions] = await Promise.all([
+		supabase
+			.from("friendships")
+			.select("requester_id, addressee_id")
+			.eq("status", "accepted"),
+		supabase.from("profiles").select("id, username, display_name"),
+		supabase
+			.from("user_quests")
+			.select("user_id, completed_at, photo_path, quests(points)")
+			.eq("status", "completed")
+			.gte("completed_at", new Date(Date.now() - 8 * 864e5).toISOString()),
+	]);
+
+	const ids = new Set([me]);
+	for (const f of friendships.data ?? []) {
+		ids.add(f.requester_id === me ? f.addressee_id : f.requester_id);
+	}
+
+	const points = new Map<string, number>();
+	for (const c of completions.data ?? []) {
+		const etDate = new Date(c.completed_at).toLocaleDateString("en-CA", {
+			timeZone: "America/New_York",
+		});
+		if (!ids.has(c.user_id) || etDate < weekStart) continue;
+		const q = Array.isArray(c.quests) ? c.quests[0] : c.quests;
+		const earned = (q?.points ?? 0) + (c.photo_path ? PHOTO_BONUS : 0);
+		points.set(c.user_id, (points.get(c.user_id) ?? 0) + earned);
+	}
+
+	return (profiles.data ?? [])
+		.filter((p) => ids.has(p.id))
+		.map((p) => ({
+			id: p.id,
+			name: p.display_name ?? p.username,
+			points: points.get(p.id) ?? 0,
+			isMe: p.id === me,
+		}))
+		.sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
 }

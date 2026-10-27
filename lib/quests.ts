@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export const PHOTO_BONUS = 5;
 
 // DMV only for now, so "today" is Eastern time.
-const todayET = () =>
+export const todayET = () =>
 	new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
 // RLS lets users read friends' completed quests and profiles, so every query
