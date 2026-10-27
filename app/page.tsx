@@ -10,6 +10,7 @@ import {
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
+import { areaLabel } from "@/lib/areas";
 import {
 	BONUS_LIMIT,
 	FREE_REROLLS,
@@ -21,13 +22,6 @@ import {
 } from "@/lib/quests";
 import { claimBonusQuest, reroll } from "./actions";
 import { QuestComplete } from "./quest-complete";
-
-const AREAS: Record<string, string> = {
-	dc_other: "DC",
-	maryland_other: "Maryland",
-	virginia_other: "Virginia",
-};
-const areaLabel = (area: string) => AREAS[area] ?? area.replaceAll("_", " ");
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;

@@ -76,7 +76,11 @@ async function pickQuest(
 	interests: string[],
 	opts: { maxPoints?: number; excludeIds?: string[] } = {},
 ) {
-	let pool = supabase.from("quests").select("id, category"); // RLS: approved only
+	// Explicit status filter: RLS also lets authors see their own pending suggestions and the admin see everything.
+	let pool = supabase
+		.from("quests")
+		.select("id, category")
+		.eq("status", "approved");
 	if (opts.maxPoints) pool = pool.lte("points", opts.maxPoints);
 	const [done, all, tilt] = await Promise.all([
 		supabase.from("user_quests").select("quest_id").eq("user_id", uid),

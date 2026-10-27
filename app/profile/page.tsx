@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 	const uid = claims?.claims.sub as string;
 	const { data: profile } = await supabase
 		.from("profiles")
-		.select("username, display_name, avatar_url")
+		.select("username, display_name, avatar_url, is_admin")
 		.eq("id", uid)
 		.single();
 
@@ -37,6 +37,20 @@ export default async function ProfilePage() {
 				>
 					Edit interests
 				</Link>
+				<Link
+					href="/suggest"
+					className={buttonVariants({ variant: "outline", size: "lg" })}
+				>
+					Suggest a quest or feature
+				</Link>
+				{profile?.is_admin && (
+					<Link
+						href="/admin"
+						className={buttonVariants({ variant: "outline", size: "lg" })}
+					>
+						Admin
+					</Link>
+				)}
 				<form action={signOut}>
 					<Button type="submit" variant="ghost" size="lg" className="w-full">
 						Sign out
