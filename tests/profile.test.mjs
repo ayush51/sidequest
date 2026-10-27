@@ -19,19 +19,26 @@ before(async () => {
 
 after(async () => {
 	await browser?.close();
-	// Delete the uploaded avatar (exact paths only), then the account.
-	const files = sql(
-		`select o.name from storage.objects o join auth.users u on o.name like u.id::text || '/%' where o.bucket_id = 'avatars' and u.email = '${email}'`,
-	).match(/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg/g);
-	for (const file of files ?? []) {
-		execFileSync("supabase", [
-			"storage",
-			"rm",
-			`ss:///avatars/${file}`,
-			"--linked",
-			"--experimental",
-			"--yes",
-		]);
+	// Delete the uploaded avatar (exact paths only), checking it is really gone, then the account.
+	const uid = sql(`select id from auth.users where email = '${email}'`).match(
+		/[0-9a-f-]{36}/,
+	)?.[0];
+	for (let attempt = 0; uid && attempt < 3; attempt++) {
+		const files =
+			sql(
+				`select name from storage.objects where bucket_id = 'avatars' and name like '${uid}/%'`,
+			).match(/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg/g) ?? [];
+		if (files.length === 0) break;
+		for (const file of files) {
+			execFileSync("supabase", [
+				"storage",
+				"rm",
+				`ss:///avatars/${file}`,
+				"--linked",
+				"--experimental",
+				"--yes",
+			]);
+		}
 	}
 	sql(`delete from auth.users where email = '${email}'`);
 });
