@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getStats, getTodayQuest, PHOTO_BONUS } from "@/lib/quests";
 import { signOut } from "./login/actions";
 import { QuestComplete } from "./quest-complete";
@@ -35,6 +36,9 @@ export default async function Home() {
 			) : (
 				<p className="text-muted-foreground">No quests available yet.</p>
 			)}
+			<Link href="/friends" className="font-semibold underline">
+				Friends 👯
+			</Link>
 			<form action={signOut}>
 				<button type="submit" className="text-sm underline">
 					Sign out
