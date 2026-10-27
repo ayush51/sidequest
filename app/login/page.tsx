@@ -1,7 +1,11 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { authenticate } from "./actions";
+
+const field =
+	"h-12 rounded-2xl border-2 bg-card px-4 text-base outline-none focus:border-ring";
 
 export default function LoginPage() {
 	const [mode, setMode] = useState<"login" | "signup">("login");
@@ -10,7 +14,13 @@ export default function LoginPage() {
 
 	return (
 		<main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6">
-			<h1 className="text-4xl font-bold">SideQuest 🧭</h1>
+			<div className="text-center">
+				<p className="text-7xl" aria-hidden>
+					🧭
+				</p>
+				<h1 className="text-4xl font-extrabold">SideQuest</h1>
+				<p className="text-muted-foreground">A little adventure, every day.</p>
+			</div>
 			<form action={action} className="flex w-full max-w-xs flex-col gap-3">
 				<input type="hidden" name="mode" value={mode} />
 				<input
@@ -18,7 +28,7 @@ export default function LoginPage() {
 					placeholder="Your name"
 					autoComplete="username"
 					required
-					className="rounded-2xl border px-4 py-3"
+					className={field}
 				/>
 				<input
 					name="pin"
@@ -28,10 +38,10 @@ export default function LoginPage() {
 					maxLength={4}
 					autoComplete={signup ? "new-password" : "current-password"}
 					required
-					className="rounded-2xl border px-4 py-3"
+					className={field}
 				/>
 				{state.error && (
-					<p role="alert" className="text-sm text-red-600">
+					<p role="alert" className="text-sm font-semibold text-destructive">
 						{state.error}
 					</p>
 				)}
@@ -40,20 +50,16 @@ export default function LoginPage() {
 						No email needed, so remember your code. It can't be recovered.
 					</p>
 				)}
-				<button
-					type="submit"
-					disabled={pending}
-					className="rounded-2xl bg-foreground px-4 py-3 font-semibold text-background disabled:opacity-50"
-				>
-					{signup ? "Create account" : "Sign in"}
-				</button>
-				<button
+				<Button type="submit" size="lg" disabled={pending}>
+					{signup ? "Create account" : "Let's go!"}
+				</Button>
+				<Button
 					type="button"
+					variant="ghost"
 					onClick={() => setMode(signup ? "login" : "signup")}
-					className="text-sm underline"
 				>
 					{signup ? "Have an account? Sign in" : "New here? Create account"}
-				</button>
+				</Button>
 			</form>
 		</main>
 	);

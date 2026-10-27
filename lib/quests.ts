@@ -15,7 +15,7 @@ export async function getTodayQuest() {
 		supabase
 			.from("user_quests")
 			.select(
-				"id, status, photo_path, quests(title, description, area, cost, points)",
+				"id, status, photo_path, quests(title, description, area, cost, points, interests(emoji))",
 			)
 			.eq("assigned_on", today)
 			.maybeSingle();

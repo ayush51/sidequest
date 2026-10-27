@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { getFeed, getRelations, searchProfiles } from "@/lib/friends";
 import { respondToRequest, sendRequest } from "./actions";
 
@@ -18,13 +18,8 @@ export default async function FriendsPage({
 	]);
 
 	return (
-		<main className="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-6">
-			<header className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Friends 👯</h1>
-				<Link href="/" className="text-sm underline">
-					← Today
-				</Link>
-			</header>
+		<main className="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-6 pb-28">
+			<h1 className="text-3xl font-extrabold">Friends 👯</h1>
 
 			<section className="flex flex-col gap-2">
 				<form className="flex gap-2">
@@ -32,14 +27,11 @@ export default async function FriendsPage({
 						name="q"
 						defaultValue={q}
 						placeholder="Find a friend by name"
-						className="min-w-0 flex-1 rounded-2xl border px-4 py-3"
+						className="h-12 min-w-0 flex-1 rounded-2xl border-2 bg-card px-4 outline-none focus:border-ring"
 					/>
-					<button
-						type="submit"
-						className="rounded-2xl bg-foreground px-4 py-3 font-semibold text-background"
-					>
+					<Button type="submit" size="lg">
 						Search
-					</button>
+					</Button>
 				</form>
 				{q && results.length === 0 && (
 					<p className="text-sm text-muted-foreground">
@@ -59,9 +51,9 @@ export default async function FriendsPage({
 								</span>
 							) : (
 								<form action={sendRequest.bind(null, p.id)}>
-									<button type="submit" className="text-sm underline">
+									<Button type="submit" size="sm">
 										Add
-									</button>
+									</Button>
 								</form>
 							)}
 						</div>
@@ -71,7 +63,7 @@ export default async function FriendsPage({
 
 			{relations.incoming.length > 0 && (
 				<section className="flex flex-col gap-2">
-					<h2 className="font-semibold">Requests</h2>
+					<h2 className="text-lg font-extrabold">Requests</h2>
 					{relations.incoming.map((r) => (
 						<div
 							key={r.requester_id}
@@ -82,16 +74,16 @@ export default async function FriendsPage({
 								<form
 									action={respondToRequest.bind(null, r.requester_id, true)}
 								>
-									<button type="submit" className="font-semibold underline">
+									<Button type="submit" size="sm">
 										Accept
-									</button>
+									</Button>
 								</form>
 								<form
 									action={respondToRequest.bind(null, r.requester_id, false)}
 								>
-									<button type="submit" className="underline">
+									<Button type="submit" size="sm" variant="ghost">
 										Decline
-									</button>
+									</Button>
 								</form>
 							</span>
 						</div>
@@ -100,7 +92,7 @@ export default async function FriendsPage({
 			)}
 
 			<section className="flex flex-col gap-3">
-				<h2 className="font-semibold">Activity</h2>
+				<h2 className="text-lg font-extrabold">Activity</h2>
 				{feed.length === 0 && (
 					<p className="text-sm text-muted-foreground">
 						Nothing yet. Complete a quest, or add friends to see theirs!
@@ -111,7 +103,7 @@ export default async function FriendsPage({
 					return (
 						<article
 							key={item.id}
-							className="flex flex-col gap-2 rounded-3xl border p-4"
+							className="flex flex-col gap-2 rounded-3xl border-2 bg-card p-4"
 						>
 							<p>
 								<strong>{who?.display_name ?? who?.username}</strong> finished{" "}
