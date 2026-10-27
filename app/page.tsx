@@ -1,6 +1,6 @@
-import { getStats, getTodayQuest } from "@/lib/quests";
-import { completeQuest } from "./actions";
+import { getStats, getTodayQuest, PHOTO_BONUS } from "@/lib/quests";
 import { signOut } from "./login/actions";
+import { QuestComplete } from "./quest-complete";
 
 export default async function Home() {
 	const [today, stats] = await Promise.all([getTodayQuest(), getStats()]);
@@ -25,17 +25,11 @@ export default async function Home() {
 					<p className="font-semibold">{quest.points} pts</p>
 					{done ? (
 						<p className="rounded-2xl bg-muted px-4 py-3 text-center font-semibold">
-							+{quest.points} pts! 🎉 Come back tomorrow.
+							+{quest.points + (today.photo_path ? PHOTO_BONUS : 0)} pts! 🎉
+							Come back tomorrow.
 						</p>
 					) : (
-						<form action={completeQuest.bind(null, today.id)}>
-							<button
-								type="submit"
-								className="w-full rounded-2xl bg-foreground px-4 py-3 font-semibold text-background"
-							>
-								Mark complete
-							</button>
-						</form>
+						<QuestComplete userQuestId={today.id} bonus={PHOTO_BONUS} />
 					)}
 				</section>
 			) : (

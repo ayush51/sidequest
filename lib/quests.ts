@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 
+// Must match the bonus in complete_quest() (migration 0005).
+export const PHOTO_BONUS = 5;
+
 // DMV only for now, so "today" is Eastern time.
 const todayET = () =>
 	new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -11,7 +14,9 @@ export async function getTodayQuest() {
 	const fetchToday = () =>
 		supabase
 			.from("user_quests")
-			.select("id, status, quests(title, description, area, cost, points)")
+			.select(
+				"id, status, photo_path, quests(title, description, area, cost, points)",
+			)
 			.eq("assigned_on", today)
 			.maybeSingle();
 
