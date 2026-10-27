@@ -5,10 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function completeQuest(userQuestId: string) {
 	const supabase = await createClient();
-	await supabase
-		.from("user_quests")
-		.update({ status: "completed", completed_at: new Date().toISOString() })
-		.eq("id", userQuestId)
-		.eq("status", "assigned");
+	await supabase.rpc("complete_quest", { p_user_quest: userQuestId });
 	revalidatePath("/");
 }
