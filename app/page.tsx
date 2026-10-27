@@ -12,6 +12,7 @@ import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
 import {
 	BONUS_LIMIT,
+	FREE_REROLLS,
 	getBonuses,
 	getInterests,
 	getStats,
@@ -44,6 +45,8 @@ export default async function Home() {
 	const quest = Array.isArray(today?.quests) ? today.quests[0] : today?.quests;
 	const emoji = one(quest?.interests)?.emoji;
 	const done = today?.status === "completed";
+	const rerollsLeft =
+		Math.max(0, FREE_REROLLS - (today?.rerolls ?? 0)) + stats.banked;
 	const canClaimBonus =
 		bonuses.length < BONUS_LIMIT &&
 		bonuses.every((b) => b.status === "completed");
@@ -113,7 +116,7 @@ export default async function Home() {
 						done={done}
 						earned={quest.points + (today.photo_path ? PHOTO_BONUS : 0)}
 					/>
-					{!done && !today.rerolled && (
+					{!done && rerollsLeft > 0 && (
 						<form action={reroll}>
 							<Button
 								type="submit"
@@ -122,7 +125,7 @@ export default async function Home() {
 								className="w-full text-muted-foreground"
 							>
 								<Shuffle className="size-4" />
-								Not feeling it? Reroll (1 left)
+								Not feeling it? Reroll ({rerollsLeft} left)
 							</Button>
 						</form>
 					)}

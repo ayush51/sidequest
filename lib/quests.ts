@@ -28,30 +28,70 @@ export async function getInterests() {
 export const BONUS_LIMIT = 2;
 const BONUS_MAX_POINTS = 10;
 
-const questSelect =
-	"id, status, photo_path, rerolled, quests(title, description, area, cost, points, interests(emoji))";
+// Must match reroll_daily() in migration 0010.
+export const FREE_REROLLS = 3;
 
-// Random quest the user hasn't had yet. Quests in their interests are 3x as likely.
+const questSelect =
+	"id, status, photo_path, rerolls, quests(title, description, area, cost, points, interests(emoji))";
+
+const one = <T>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);
+
+type CategoryRows =
+	| { quests: { category: string } | { category: string }[] | null }[]
+	| null;
+
+// How the user's history nudges each category: +0.25 per finished quest, -0.4 per skip.
+async function categoryTilt(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	uid: string,
+) {
+	const [finished, skipped] = await Promise.all([
+		supabase
+			.from("user_quests")
+			.select("quests(category)")
+			.eq("user_id", uid)
+			.eq("status", "completed"),
+		supabase
+			.from("quest_rerolls")
+			.select("quests(category)")
+			.eq("user_id", uid),
+	]);
+	const tilt = new Map<string, number>();
+	const add = (rows: CategoryRows, delta: number) => {
+		for (const r of rows ?? []) {
+			const category = one(r.quests)?.category;
+			if (category) tilt.set(category, (tilt.get(category) ?? 0) + delta);
+		}
+	};
+	add(finished.data, 0.25);
+	add(skipped.data, -0.4);
+	return tilt;
+}
+
+// Random quest the user hasn't had yet. Quests in their interests are 3x as likely,
+// scaled by what they finish and skip (kept between 0.25x and 2x so one habit can't dominate).
 async function pickQuest(
 	supabase: Awaited<ReturnType<typeof createClient>>,
 	uid: string,
 	interests: string[],
-	opts: { maxPoints?: number; excludeId?: string } = {},
+	opts: { maxPoints?: number; excludeIds?: string[] } = {},
 ) {
 	let pool = supabase.from("quests").select("id, category"); // RLS: approved only
 	if (opts.maxPoints) pool = pool.lte("points", opts.maxPoints);
-	const [done, all] = await Promise.all([
+	const [done, all, tilt] = await Promise.all([
 		supabase.from("user_quests").select("quest_id").eq("user_id", uid),
 		pool,
+		categoryTilt(supabase, uid),
 	]);
 	const doneIds = new Set((done.data ?? []).map((r) => r.quest_id));
 	const choices = (all.data ?? []).filter(
-		(q) => !doneIds.has(q.id) && q.id !== opts.excludeId,
+		(q) => !doneIds.has(q.id) && !opts.excludeIds?.includes(q.id),
 	);
 	if (choices.length === 0) return null;
 
 	const weight = (q: { category: string }) =>
-		interests.includes(q.category) ? 3 : 1;
+		(interests.includes(q.category) ? 3 : 1) *
+		Math.min(2, Math.max(0.25, 1 + (tilt.get(q.category) ?? 0)));
 	let roll = Math.random() * choices.reduce((sum, q) => sum + weight(q), 0);
 	for (const q of choices) {
 		roll -= weight(q);
@@ -101,16 +141,28 @@ export async function getTodayQuest(interests: string[]) {
 
 export async function rerollToday(interests: string[]) {
 	const { supabase, uid } = await currentUser();
-	const current = await supabase
-		.from("user_quests")
-		.select("quest_id")
-		.eq("user_id", uid)
-		.eq("assigned_on", todayET())
-		.eq("kind", "daily")
-		.maybeSingle();
-	const pick = await pickQuest(supabase, uid, interests, {
-		excludeId: current.data?.quest_id,
-	});
+	// Skip the current quest and anything skipped in the last 24h (the database
+	// only enforces "not today", so this is a safe superset).
+	const since = new Date(Date.now() - 864e5).toISOString();
+	const [current, skipped] = await Promise.all([
+		supabase
+			.from("user_quests")
+			.select("quest_id")
+			.eq("user_id", uid)
+			.eq("assigned_on", todayET())
+			.eq("kind", "daily")
+			.maybeSingle(),
+		supabase
+			.from("quest_rerolls")
+			.select("quest_id")
+			.eq("user_id", uid)
+			.gte("created_at", since),
+	]);
+	const excludeIds = [
+		...(current.data ? [current.data.quest_id] : []),
+		...(skipped.data ?? []).map((r) => r.quest_id),
+	];
+	const pick = await pickQuest(supabase, uid, interests, { excludeIds });
 	if (pick) await supabase.rpc("reroll_daily", { p_new_quest: pick });
 }
 
@@ -138,7 +190,7 @@ export async function getStats() {
 	const { supabase, uid } = await currentUser();
 	const { data } = await supabase
 		.from("profiles")
-		.select("points, current_streak, last_completed_on")
+		.select("points, current_streak, last_completed_on, banked_rerolls")
 		.eq("id", uid)
 		.maybeSingle();
 
@@ -153,5 +205,6 @@ export async function getStats() {
 		points,
 		streak: alive ? data.current_streak : 0,
 		level: 1 + Math.floor(points / 100),
+		banked: data?.banked_rerolls ?? 0,
 	};
 }

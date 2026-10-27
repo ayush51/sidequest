@@ -27,7 +27,7 @@ after(async () => {
 
 const path = () => new URL(page.url()).pathname;
 
-test("new user: signup, interests, first quest, reroll, complete, bonuses, edit", async () => {
+test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, edit", async () => {
 	await page.goto(`${BASE}/login`);
 	await page.getByRole("button", { name: /Create account/ }).click();
 	await page.fill("input[name=name]", name);
@@ -48,13 +48,21 @@ test("new user: signup, interests, first quest, reroll, complete, bonuses, edit"
 	assert.equal(await page.getByText("No quests available").count(), 0);
 	assert.ok((await page.locator("h2").first().textContent())?.length > 0);
 
-	// Reroll swaps the quest once, then the button disappears.
-	const firstTitle = await page.locator("h2").first().textContent();
-	await page.getByRole("button", { name: /Reroll/ }).click();
-	await page.waitForFunction(
-		(t) => document.querySelector("h2")?.textContent !== t,
-		firstTitle,
-	);
+	// Three free rerolls, each swapping the quest; then the button disappears.
+	await page.getByRole("button", { name: /Reroll \(3 left\)/ }).waitFor();
+	for (let left = 2; left >= 0; left--) {
+		const title = await page.locator("h2").first().textContent();
+		await page.getByRole("button", { name: /Reroll/ }).click();
+		await page.waitForFunction(
+			(t) => document.querySelector("h2")?.textContent !== t,
+			title,
+		);
+		if (left > 0) {
+			await page
+				.getByRole("button", { name: `Not feeling it? Reroll (${left} left)` })
+				.waitFor();
+		}
+	}
 	assert.equal(await page.getByRole("button", { name: /Reroll/ }).count(), 0);
 
 	await page.getByRole("button", { name: /Complete quest/ }).click();
