@@ -42,6 +42,17 @@ export default function LoginPage() {
 					required
 					className={field}
 				/>
+				{signup && (
+					<input
+						name="group"
+						placeholder="Group code: ava"
+						aria-label="Group code (optional)"
+						maxLength={12}
+						autoCapitalize="none"
+						autoComplete="off"
+						className={field}
+					/>
+				)}
 				{state.error && (
 					<p role="alert" className="text-sm font-semibold text-destructive">
 						{state.error}

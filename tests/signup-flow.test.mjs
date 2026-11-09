@@ -67,7 +67,9 @@ test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, ed
 
 	await page.getByRole("button", { name: /Complete quest/ }).click();
 	await page.getByText(/XP earned/).waitFor();
-	const points = await page.locator("ul.grid-cols-3 li", { hasText: "XP" }).textContent();
+	const points = await page
+		.locator("ul.grid-cols-3 li", { hasText: "XP" })
+		.textContent();
 	assert.ok(
 		!points?.startsWith("0"),
 		`points should be awarded, got: ${points}`,
