@@ -93,7 +93,9 @@ export async function getLeaderboard() {
 			.from("friendships")
 			.select("requester_id, addressee_id")
 			.eq("status", "accepted"),
-		supabase.from("profiles").select("id, username, display_name, avatar_url"),
+		supabase
+			.from("profiles")
+			.select("id, username, display_name, avatar_url, points"),
 		supabase
 			.from("user_quests")
 			.select("user_id, completed_at, photo_path, quests(points)")
@@ -138,6 +140,7 @@ export async function getLeaderboard() {
 			id: p.id,
 			name: p.display_name ?? p.username,
 			avatarUrl: p.avatar_url,
+			xp: p.points,
 			points: points.get(p.id) ?? 0,
 			isMe: p.id === me,
 		}))

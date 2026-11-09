@@ -89,8 +89,9 @@ test("profile: name, photo, code change, sign out and back in", async () => {
 			document.querySelector('main img[src*="/avatars/"]')?.naturalWidth > 0,
 	);
 
-	await page.getByRole("link", { name: "Friends" }).click();
+	await page.getByRole("link", { name: "Social" }).click();
 	await page.waitForURL(/\/friends/);
+	await page.getByRole("link", { name: "Ranks" }).click();
 	await page.getByText("Test Nova").first().waitFor();
 	await page.locator('ol img[src*="/avatars/"]').waitFor();
 

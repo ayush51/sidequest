@@ -47,12 +47,21 @@ test("friends: search, request, accept, weekly leaderboard", async () => {
 	const a = await signUpAndFinishQuest(nameA);
 	const b = await signUpAndFinishQuest(nameB);
 
-	// Alone, each sees only themselves on the board.
+	// The three views: Feed is the default, the switcher moves between them.
 	await a.goto(`${BASE}/friends`);
+	await a.getByText("Activity", { exact: true }).waitFor();
+	await a.getByRole("link", { name: "Ranks" }).click();
+	await a.getByText("This week").waitFor();
+	await a.getByRole("link", { name: "People" }).click();
+	await a.getByText("Your people").waitFor();
+
+	// Alone, each sees only themselves on the board.
+	await a.goto(`${BASE}/friends?view=ranks`);
 	await a.getByText("This week").waitFor();
 	assert.equal(await a.locator("ol > li").count(), 1);
 
 	// A finds B by name and sends a request.
+	await a.goto(`${BASE}/friends?view=people`);
 	await a.fill("input[name=q]", nameB);
 	await a.getByRole("button", { name: "Search" }).click();
 	await a.getByText(nameB).waitFor();
@@ -60,7 +69,7 @@ test("friends: search, request, accept, weekly leaderboard", async () => {
 	await a.getByText("Requested").waitFor();
 
 	// B accepts from the requests inbox.
-	await b.goto(`${BASE}/friends`);
+	await b.goto(`${BASE}/friends?view=people`);
 	await b.getByRole("button", { name: "Accept" }).click();
 	await b
 		.getByRole("button", { name: "Accept" })
@@ -68,7 +77,7 @@ test("friends: search, request, accept, weekly leaderboard", async () => {
 
 	// Both now see both on the board, ranked by points (highest first).
 	for (const page of [a, b]) {
-		await page.goto(`${BASE}/friends`);
+		await page.goto(`${BASE}/friends?view=ranks`);
 		await page.getByText("This week").waitFor();
 		await page.waitForFunction(
 			() => document.querySelectorAll("ol > li").length === 2,

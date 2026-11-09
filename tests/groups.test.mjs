@@ -47,7 +47,7 @@ async function signUpAndFinishQuest(name) {
 }
 
 async function joinGroup(page, groupCode) {
-	await page.goto(`${BASE}/friends`);
+	await page.goto(`${BASE}/friends?view=people`);
 	await page.waitForLoadState("networkidle"); // let the form hydrate
 	await page.fill("input[name=code]", groupCode);
 	await page.getByRole("button", { name: "Join" }).click();
@@ -72,23 +72,32 @@ test("groups: join by code, see each other, leave", async () => {
 		[a, nameB],
 		[b, nameA],
 	]) {
-		await page.goto(`${BASE}/friends`);
+		await page.goto(`${BASE}/friends?view=ranks`);
 		await page.waitForFunction(
 			() => document.querySelectorAll("ol > li").length === 2,
 		);
 		await page.locator("ol > li", { hasText: other }).waitFor();
+		await page.goto(`${BASE}/friends?view=feed`);
 		await page.locator("article", { hasText: other }).first().waitFor();
+		await page.goto(`${BASE}/friends?view=people`);
 		await page.getByText(`${groupName} · 2 members`).waitFor();
+		await page.locator("ul > li", { hasText: other }).waitFor();
 	}
 
 	// A leaves; B no longer sees A anywhere, and the group shrinks to 1.
-	await a.goto(`${BASE}/friends`);
+	await a.goto(`${BASE}/friends?view=people`);
 	await a.getByRole("button", { name: "Leave" }).click();
 	await a.getByText(groupName).waitFor({ state: "detached" });
-	await b.goto(`${BASE}/friends`);
+	await b.goto(`${BASE}/friends?view=ranks`);
 	await b.waitForFunction(
 		() => document.querySelectorAll("ol > li").length === 1,
 	);
-	assert.equal(await b.getByText(nameA).count(), 0, "A is gone from B's page");
+	assert.equal(await b.getByText(nameA).count(), 0, "A is gone from B's ranks");
+	await b.goto(`${BASE}/friends?view=people`);
 	await b.getByText(`${groupName} · 1 member`).waitFor();
+	assert.equal(
+		await b.getByText(nameA).count(),
+		0,
+		"A is gone from B's people",
+	);
 });

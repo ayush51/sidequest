@@ -42,11 +42,11 @@ export async function authenticate(
 		};
 	}
 	// Optional group code at signup. A wrong code never blocks the new account:
-	// send them to Friends, where the join box lets them try again.
+	// send them to Social, where the join box lets them try again.
 	const group = String(formData.get("group") ?? "").trim();
 	if (mode === "signup" && group) {
 		const { data } = await supabase.rpc("join_group", { p_code: group });
-		if (!data || data.error) redirect("/friends");
+		if (!data || data.error) redirect("/friends?view=people");
 	}
 	redirect("/");
 }

@@ -99,7 +99,7 @@ test("admin: approve quest + feature, create group, remove member", async () => 
 	const code = (await groupCard.locator("code").textContent()).trim();
 	assert.match(code, /^[A-HJ-KM-NP-Z2-9]{6}$/);
 
-	await user.goto(`${BASE}/friends`);
+	await user.goto(`${BASE}/friends?view=people`);
 	await user.waitForLoadState("networkidle");
 	await user.fill("input[name=code]", code);
 	await user.getByRole("button", { name: "Join" }).click();

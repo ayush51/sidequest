@@ -44,7 +44,7 @@ async function signUp(name, group) {
 test("signup with a group code joins the group", async () => {
 	const page = await signUp(nameA, code.toLowerCase());
 	await page.waitForURL(/\/interests/);
-	await page.goto(`${BASE}/friends`);
+	await page.goto(`${BASE}/friends?view=people`);
 	await page.getByText(`${groupName} · 1 member`).waitFor();
 });
 
