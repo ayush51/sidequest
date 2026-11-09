@@ -206,7 +206,7 @@ export default async function FriendsPage({
 							)}
 							<p className="text-sm text-muted-foreground">
 								<Zap className="mr-1 inline size-3.5 text-primary-ink" />
-								{item.pointsEarned} pts ·{" "}
+								{item.pointsEarned} XP ·{" "}
 								{new Date(item.completed_at).toLocaleDateString("en-US", {
 									month: "short",
 									day: "numeric",

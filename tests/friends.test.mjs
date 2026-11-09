@@ -39,7 +39,7 @@ async function signUpAndFinishQuest(name) {
 	await page.getByRole("button", { name: "Save" }).click();
 	await page.waitForURL((u) => u.pathname === "/");
 	await page.getByRole("button", { name: /Complete quest/ }).click();
-	await page.getByText(/pts earned/).waitFor();
+	await page.getByText(/XP earned/).waitFor();
 	return page;
 }
 

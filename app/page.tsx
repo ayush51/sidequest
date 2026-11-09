@@ -46,7 +46,7 @@ export default async function Home() {
 		bonuses.every((b) => b.status === "completed");
 
 	const tiles = [
-		{ Icon: Zap, label: "Points", value: stats.points },
+		{ Icon: Zap, label: "XP", value: stats.points },
 		{ Icon: Flame, label: "Streak", value: stats.streak },
 		{ Icon: Trophy, label: "Level", value: stats.level },
 	];
@@ -101,7 +101,7 @@ export default async function Home() {
 						</li>
 						<li className="flex items-center gap-1.5 text-foreground">
 							<Zap className="size-4 text-primary-ink" />
-							{quest.points} pts
+							{quest.points} XP
 						</li>
 					</ul>
 					<QuestComplete

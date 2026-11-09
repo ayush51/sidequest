@@ -10,7 +10,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
 	title: "SideQuest",
-	description: "A daily side quest for the DMV. Do something fun, earn points.",
+	description: "A daily side quest for the DMV. Do something fun, earn XP.",
 };
 
 export const viewport: Viewport = {

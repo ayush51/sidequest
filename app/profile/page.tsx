@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../login/actions";
+import { Achievements } from "./achievements";
 import { AvatarEditor, CodeForm, NameForm } from "./profile-forms";
 
 export default async function ProfilePage() {
@@ -28,6 +29,7 @@ export default async function ProfilePage() {
 				name={profile?.display_name ?? username}
 				avatarUrl={profile?.avatar_url ?? null}
 			/>
+			<Achievements />
 			<NameForm name={profile?.display_name ?? username} />
 			<CodeForm />
 			<div className="flex flex-col gap-2">

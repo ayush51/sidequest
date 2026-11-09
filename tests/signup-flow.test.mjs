@@ -66,8 +66,8 @@ test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, ed
 	assert.equal(await page.getByRole("button", { name: /Reroll/ }).count(), 0);
 
 	await page.getByRole("button", { name: /Complete quest/ }).click();
-	await page.getByText(/pts earned/).waitFor();
-	const points = await page.locator("li", { hasText: "Points" }).textContent();
+	await page.getByText(/XP earned/).waitFor();
+	const points = await page.locator("ul.grid-cols-3 li", { hasText: "XP" }).textContent();
 	assert.ok(
 		!points?.startsWith("0"),
 		`points should be awarded, got: ${points}`,
@@ -80,7 +80,7 @@ test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, ed
 		await page.getByRole("button", { name: /Complete quest/ }).waitFor();
 		await page.getByRole("button", { name: /Complete quest/ }).click();
 		await page
-			.getByText(/pts earned/)
+			.getByText(/XP earned/)
 			.nth(n)
 			.waitFor();
 	}
@@ -92,11 +92,11 @@ test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, ed
 
 	await page.reload();
 	await page
-		.getByText(/pts earned/)
+		.getByText(/XP earned/)
 		.first()
 		.waitFor();
 	assert.equal(
-		await page.getByText(/pts earned/).count(),
+		await page.getByText(/XP earned/).count(),
 		3,
 		"daily + 2 bonuses persist",
 	);

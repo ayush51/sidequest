@@ -145,10 +145,10 @@ export default async function AdminPage() {
 									min={1}
 									max={100}
 									defaultValue={q.points}
-									aria-label="Points"
+									aria-label="XP"
 									className="h-10 w-20 rounded-xl border bg-background px-3"
 								/>
-								<span className="text-sm text-muted-foreground">pts</span>
+								<span className="text-sm text-muted-foreground">XP</span>
 								<Button type="submit" size="sm" className="ml-auto">
 									Approve
 								</Button>

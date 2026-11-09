@@ -72,7 +72,7 @@ export function QuestComplete({
 		return (
 			<div className="relative">
 				<p className="flex items-center justify-center gap-2 rounded-2xl border border-primary px-4 py-3 font-bold text-primary-ink">
-					<Check className="size-5" strokeWidth={3} />+{earned} pts earned
+					<Check className="size-5" strokeWidth={3} />+{earned} XP earned
 				</p>
 				{celebrating && !reduceMotion && (
 					<motion.span
@@ -101,7 +101,7 @@ export function QuestComplete({
 			</Button>
 			<label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm font-semibold text-muted-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50">
 				<Camera className="size-4" />
-				{file ? file.name : `Add a photo, +${bonus} pts`}
+				{file ? file.name : `Add a photo, +${bonus} XP`}
 				<input
 					type="file"
 					accept="image/*"
