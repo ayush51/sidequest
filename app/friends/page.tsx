@@ -39,7 +39,7 @@ export default async function FriendsPage({
 	]);
 
 	return (
-		<main className="mx-auto flex min-h-dvh max-w-sm flex-col gap-6 p-6 pb-28">
+		<main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col gap-6 p-6 pb-28">
 			<h1 className="text-4xl font-bold tracking-tight">Social</h1>
 
 			<nav className="grid grid-cols-3 gap-1 rounded-2xl border bg-card p-1">
