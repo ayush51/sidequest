@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# sidequest.
 
-## Getting Started
+A small adventure, every day. SideQuest hands you one random real-world quest in the DC / Maryland / Virginia area, like a canal stroll, a hidden-gem hike or a Little Free Library swap. You earn XP, build a streak and compete with friends.
 
-First, run the development server:
+**Live:** https://sidequestdmv.vercel.app
+
+<p>
+  <img src="docs/screenshots/04-today.png" width="220" alt="Today's quest" />
+  <img src="docs/screenshots/05-today-complete.png" width="220" alt="Quest completed with XP, streak and level" />
+  <img src="docs/screenshots/10-profile.png" width="220" alt="Character stats and achievements" />
+</p>
+<p>
+  <img src="docs/screenshots/07-social-feed.png" width="220" alt="Social feed with photo proof" />
+  <img src="docs/screenshots/08-social-ranks.png" width="220" alt="Weekly leaderboard" />
+  <img src="docs/screenshots/09-social-people.png" width="220" alt="Groups and people" />
+</p>
+
+_Screenshots use demo accounts._
+
+## Features
+
+- **Daily quest:** one random quest from a hand-picked DMV pool, leaning toward your interests and learning from what you finish and skip.
+- **Rerolls and bonus rounds:** skip a quest you're not feeling, or take up to two extra quick quests after you finish.
+- **XP, levels and streaks:** earn XP per quest, plus a bonus for photo proof. Streaks bank extra rerolls.
+- **Character and achievements:** four stats (Body, Mind, Taste, Chaos) level up from the quests you finish, and milestone cards unlock along the way.
+- **Social:** a friends feed with photos, a weekly leaderboard, and groups you join with a code, so everyone in a group sees each other without friend requests.
+- **Suggestions:** anyone can suggest a quest or a feature. The creator approves quests before they join the pool for everyone.
+- **Simple sign-in:** a name and a 4-digit code, with no email.
+
+## Stack
+
+Next.js (App Router, TypeScript), Tailwind CSS and shadcn/ui, Motion, Supabase (Postgres, Auth, Storage, row-level security on every table), Vercel, pnpm, Biome.
+
+## Run it locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local` with your Supabase project's public values first:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The schema lives in `supabase/migrations/`. Apply it to your own Supabase project with `supabase db push --linked`.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | What it does |
+| --- | --- |
+| `pnpm dev` | Dev server on http://localhost:3000 |
+| `pnpm build` | Production build |
+| `pnpm typecheck` / `pnpm lint` | Type check and lint |
+| `pnpm test:e2e` | Browser tests (needs the dev server running and a logged-in Supabase CLI) |
