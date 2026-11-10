@@ -47,9 +47,9 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 The schema lives in `supabase/migrations/`. Apply it to your own Supabase project with `supabase db push --linked`.
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Dev server on http://localhost:3000 |
-| `pnpm build` | Production build |
-| `pnpm typecheck` / `pnpm lint` | Type check and lint |
-| `pnpm test:e2e` | Browser tests (needs the dev server running and a logged-in Supabase CLI) |
+| Command                        | What it does                                                              |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `pnpm dev`                     | Dev server on http://localhost:3000                                       |
+| `pnpm build`                   | Production build                                                          |
+| `pnpm typecheck` / `pnpm lint` | Type check and lint                                                       |
+| `pnpm test:e2e`                | Browser tests (needs the dev server running and a logged-in Supabase CLI) |
