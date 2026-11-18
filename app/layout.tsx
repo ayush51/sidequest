@@ -11,6 +11,8 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
 	title: "SideQuest",
 	description: "A daily side quest for the DMV. Do something fun, earn XP.",
+	icons: { apple: "/icons/apple-touch-icon.png" },
+	appleWebApp: { capable: true, title: "SideQuest", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

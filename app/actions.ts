@@ -1,7 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { claimBonus, getInterests, rerollToday } from "@/lib/quests";
+import { after } from "next/server";
+import { sendPush } from "@/lib/push";
+import {
+	claimBonus,
+	currentUser,
+	getInterests,
+	rerollToday,
+	todayET,
+} from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
 
 export async function completeQuest(userQuestId: string, photoPath?: string) {
@@ -70,7 +78,38 @@ export async function inviteToTeam(inviteeId: string): Promise<TeamResult> {
 	});
 	revalidatePath("/");
 	if (error) return { error: "Couldn't send that invite." };
-	return data?.error ? { error: data.error } : {};
+	if (data?.error) return { error: data.error };
+
+	// Tell the invitee (if they have reminders on). Never lets a notification problem fail the invite.
+	const { uid } = await currentUser();
+	const [{ data: me }, { data: daily }] = await Promise.all([
+		supabase
+			.from("profiles")
+			.select("display_name, username")
+			.eq("id", uid)
+			.maybeSingle(),
+		supabase
+			.from("user_quests")
+			.select("quests(title)")
+			.eq("user_id", uid)
+			.eq("assigned_on", todayET())
+			.eq("kind", "daily")
+			.maybeSingle(),
+	]);
+	const quest = Array.isArray(daily?.quests) ? daily.quests[0] : daily?.quests;
+	after(async () => {
+		try {
+			await sendPush(inviteeId, {
+				title: `${me?.display_name ?? me?.username ?? "A friend"} invited you`,
+				body: `${quest?.title ?? "Today's quest"}. Finish it together for +5 XP each.`,
+				url: "/",
+				tag: "team-invite",
+			});
+		} catch {
+			// The invite already went through.
+		}
+	});
+	return {};
 }
 
 export async function respondToInvite(
@@ -85,4 +124,27 @@ export async function respondToInvite(
 	revalidatePath("/");
 	if (error) return { error: "Something went wrong. Try again." };
 	return data?.error ? { error: data.error } : {};
+}
+
+export type PushResult = { error?: string };
+
+// Turn on reminders for this device.
+export async function savePushSubscription(sub: {
+	endpoint: string;
+	p256dh: string;
+	auth: string;
+}): Promise<PushResult> {
+	const supabase = await createClient();
+	const { error } = await supabase.rpc("save_push_subscription", {
+		p_endpoint: sub.endpoint,
+		p_p256dh: sub.p256dh,
+		p_auth: sub.auth,
+	});
+	return error ? { error: "Couldn't turn on reminders. Try again." } : {};
+}
+
+// Turn off reminders for this device (row-level security limits it to your own).
+export async function removePushSubscription(endpoint: string) {
+	const supabase = await createClient();
+	await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
 }

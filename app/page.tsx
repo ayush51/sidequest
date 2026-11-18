@@ -16,6 +16,7 @@ import {
 } from "@/lib/quests";
 import { getTeam, getTeamInvites } from "@/lib/team";
 import { claimBonusQuest } from "./actions";
+import { NotifyToggle } from "./notify-toggle";
 import { QuestComplete } from "./quest-complete";
 import { QuestVote } from "./quest-vote";
 import { RerollForm } from "./reroll-form";
@@ -81,6 +82,7 @@ export default async function Home() {
 				))}
 			</ul>
 
+			<NotifyToggle variant="card" />
 			{invites.length > 0 && <TeamInvites invites={invites} />}
 			{today && quest ? (
 				<section className="fade-in slide-in-from-bottom-3 relative flex animate-in flex-col gap-5 rounded-3xl border bg-card p-6 duration-500">

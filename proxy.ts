@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
 
 	// /sso and /link are how a member arrives from The Square (lib/square-pass.ts):
 	// signed out by definition, and they sign themselves in.
-	const open = ["/login", "/sso", "/link"];
+	const open = ["/login", "/sso", "/link", "/api/cron"];
 	if (!user && !open.some((p) => request.nextUrl.pathname.startsWith(p))) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
@@ -36,6 +36,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
 	matcher: [
-		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|ico)$).*)",
+		"/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|ico)$).*)",
 	],
 };
