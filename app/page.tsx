@@ -1,4 +1,4 @@
-import { Flame, MapPin, Plus, Trophy, Wallet, Zap } from "lucide-react";
+import { Flame, MapPin, Plus, Trophy, Users, Wallet, Zap } from "lucide-react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,13 @@ import {
 	getVotes,
 	PHOTO_BONUS,
 } from "@/lib/quests";
+import { getTeam, getTeamInvites } from "@/lib/team";
 import { claimBonusQuest } from "./actions";
 import { QuestComplete } from "./quest-complete";
 import { QuestVote } from "./quest-vote";
 import { RerollForm } from "./reroll-form";
+import { TeamInvites } from "./team-invites";
+import { TeamUp } from "./team-up";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;
@@ -27,18 +30,25 @@ export default async function Home() {
 	await connection();
 	const interests = await getInterests();
 	if (interests.length === 0) redirect("/interests");
-	const [today, stats, bonuses, categories] = await Promise.all([
+	const [today, stats, bonuses, categories, team, invites] = await Promise.all([
 		getTodayQuest(interests),
 		getStats(),
 		getBonuses(),
 		getCategories(),
+		getTeam(),
+		getTeamInvites(),
 	]);
 	const votes = await getVotes(
-		[today?.quest_id, ...bonuses.map((b) => b.quest_id)].filter(Boolean),
+		[
+			today?.quest_id,
+			...bonuses.map((b) => b.quest_id),
+			...team.quests.map((t) => t.quest_id),
+		].filter(Boolean),
 	);
 	const quest = Array.isArray(today?.quests) ? today.quests[0] : today?.quests;
 	const emoji = one(quest?.interests)?.emoji;
 	const done = today?.status === "completed";
+	const mates = team.sent.filter((t) => t.questId === today?.quest_id);
 	const rerollsLeft =
 		Math.max(0, FREE_REROLLS - (today?.rerolls ?? 0)) + stats.banked;
 	const canClaimBonus =
@@ -71,6 +81,7 @@ export default async function Home() {
 				))}
 			</ul>
 
+			{invites.length > 0 && <TeamInvites invites={invites} />}
 			{today && quest ? (
 				<section className="fade-in slide-in-from-bottom-3 relative flex animate-in flex-col gap-5 rounded-3xl border bg-card p-6 duration-500">
 					<div className="flex items-center justify-between">
@@ -110,6 +121,11 @@ export default async function Home() {
 						done={done}
 						earned={quest.points + (today.photo_path ? PHOTO_BONUS : 0)}
 					/>
+					<TeamUp
+						questTitle={quest.title}
+						canInvite={!done && mates.length < 3}
+						mates={mates}
+					/>
 					{!done && rerollsLeft > 0 && (
 						<RerollForm left={rerollsLeft} categories={categories} />
 					)}
@@ -120,6 +136,43 @@ export default async function Home() {
 				</section>
 			) : (
 				<p className="text-muted-foreground">No quests available yet.</p>
+			)}
+			{team.quests.length > 0 && (
+				<section className="flex flex-col gap-3">
+					{team.quests.map((t) => {
+						const tq = one(t.quests);
+						return tq ? (
+							<div
+								key={t.id}
+								className="flex flex-col gap-3 rounded-3xl border bg-card p-5"
+							>
+								<p className="flex items-center gap-2 text-xs font-bold tracking-widest text-primary-ink uppercase">
+									<Users className="size-4" />
+									Team quest with {t.partner}
+								</p>
+								<h3 className="text-2xl font-bold tracking-tight">
+									{tq.title}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{tq.description}
+								</p>
+								<p className="text-sm text-muted-foreground">
+									Finish it together for +5 XP each.
+								</p>
+								<QuestComplete
+									userQuestId={t.id}
+									bonus={PHOTO_BONUS}
+									done={t.status === "completed"}
+									earned={tq.points + (t.photo_path ? PHOTO_BONUS : 0)}
+								/>
+								<QuestVote
+									questId={t.quest_id}
+									vote={votes.get(t.quest_id) ?? 0}
+								/>
+							</div>
+						) : null;
+					})}
+				</section>
 			)}
 			{done && (
 				<section className="flex flex-col gap-3">

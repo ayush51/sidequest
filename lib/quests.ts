@@ -9,7 +9,7 @@ export const todayET = () =>
 
 // RLS lets users read friends' completed quests and profiles, so every query
 // here must be scoped to the signed-in user explicitly.
-async function currentUser() {
+export async function currentUser() {
 	const supabase = await createClient();
 	const { data } = await supabase.auth.getClaims();
 	return { supabase, uid: data?.claims.sub as string };
@@ -31,7 +31,7 @@ const BONUS_MAX_POINTS = 10;
 // Must match reroll_daily() in migration 0016.
 export const FREE_REROLLS = 5;
 
-const questSelect =
+export const questSelect =
 	"id, quest_id, status, photo_path, rerolls, quests(title, description, area, cost, points, interests(emoji))";
 
 const one = <T>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);

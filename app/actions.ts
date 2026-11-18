@@ -48,3 +48,41 @@ export async function claimBonusQuest() {
 	await claimBonus(await getInterests());
 	revalidatePath("/");
 }
+
+export type TeamResult = { error?: string };
+
+// Friends and group-mates I can invite to today's quest.
+export async function getTeamCandidates() {
+	const supabase = await createClient();
+	const { data } = await supabase.rpc("team_candidates");
+	return (data ?? []) as {
+		id: string;
+		name: string;
+		avatar_url: string | null;
+		invited: boolean;
+	}[];
+}
+
+export async function inviteToTeam(inviteeId: string): Promise<TeamResult> {
+	const supabase = await createClient();
+	const { data, error } = await supabase.rpc("invite_to_team", {
+		p_invitee: inviteeId,
+	});
+	revalidatePath("/");
+	if (error) return { error: "Couldn't send that invite." };
+	return data?.error ? { error: data.error } : {};
+}
+
+export async function respondToInvite(
+	teamId: string,
+	accept: boolean,
+): Promise<TeamResult> {
+	const supabase = await createClient();
+	const { data, error } = await supabase.rpc("respond_to_team_invite", {
+		p_team: teamId,
+		p_accept: accept,
+	});
+	revalidatePath("/");
+	if (error) return { error: "Something went wrong. Try again." };
+	return data?.error ? { error: data.error } : {};
+}
