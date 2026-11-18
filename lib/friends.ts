@@ -52,6 +52,31 @@ export async function getFeed() {
 		.order("completed_at", { ascending: false })
 		.limit(30);
 	const items = data ?? [];
+	const ids = items.map((i) => i.id);
+
+	// Reactions and comments on these posts. Row-level security limits them to posts I can see.
+	const { data: auth } = await supabase.auth.getClaims();
+	const me = auth?.claims.sub as string;
+	const [reactions, comments] = ids.length
+		? await Promise.all([
+				supabase
+					.from("feed_reactions")
+					.select("user_quest_id, kind, user_id")
+					.in("user_quest_id", ids),
+				supabase
+					.from("feed_comments")
+					.select("id, user_quest_id, user_id, body")
+					.in("user_quest_id", ids)
+					.order("created_at"),
+			])
+		: [{ data: [] }, { data: [] }];
+	const authorIds = [...new Set((comments.data ?? []).map((c) => c.user_id))];
+	const { data: authors } = authorIds.length
+		? await supabase
+				.from("profiles")
+				.select("id, username, display_name")
+				.in("id", authorIds)
+		: { data: [] };
 
 	const paths = items.flatMap((i) => (i.photo_path ? [i.photo_path] : []));
 	const signed = paths.length
@@ -63,13 +88,39 @@ export async function getFeed() {
 		: [];
 	const urls = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
-	return items.map((i) => ({
-		...i,
-		photoUrl: i.photo_path ? (urls.get(i.photo_path) ?? null) : null,
-		pointsEarned:
-			(Array.isArray(i.quests) ? i.quests[0] : i.quests)?.points +
-			(i.photo_path ? PHOTO_BONUS : 0),
-	}));
+	return items.map((i) => {
+		const mineReaction = (reactions.data ?? []).find(
+			(r) => r.user_quest_id === i.id && r.user_id === me,
+		);
+		const count = (kind: string) =>
+			(reactions.data ?? []).filter(
+				(r) => r.user_quest_id === i.id && r.kind === kind,
+			).length;
+		return {
+			...i,
+			reactions: {
+				heart: count("heart"),
+				fire: count("fire"),
+				laugh: count("laugh"),
+			},
+			mine: (mineReaction?.kind ?? null) as "heart" | "fire" | "laugh" | null,
+			comments: (comments.data ?? [])
+				.filter((c) => c.user_quest_id === i.id)
+				.map((c) => {
+					const author = authors?.find((a) => a.id === c.user_id);
+					return {
+						id: c.id,
+						body: c.body,
+						name: author?.display_name ?? author?.username ?? "Someone",
+						mine: c.user_id === me,
+					};
+				}),
+			photoUrl: i.photo_path ? (urls.get(i.photo_path) ?? null) : null,
+			pointsEarned:
+				(Array.isArray(i.quests) ? i.quests[0] : i.quests)?.points +
+				(i.photo_path ? PHOTO_BONUS : 0),
+		};
+	});
 }
 
 // Points earned since Monday (Eastern) by you and your accepted friends.
@@ -168,4 +219,11 @@ export async function getMyGroups() {
 		name: g.name,
 		members: one(g.group_members)?.count ?? 0,
 	}));
+}
+
+// Whether the signed-in user is the creator (they can delete anyone's comment).
+export async function getIsAdmin() {
+	const supabase = await createClient();
+	const { data } = await supabase.rpc("is_admin");
+	return data === true;
 }

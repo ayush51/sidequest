@@ -109,6 +109,9 @@ test("profile: name, photo, code change, sign out and back in", async () => {
 	// Old code no longer works; the new one does.
 	await page.getByRole("button", { name: "Sign out" }).click();
 	await page.waitForURL(/\/login/);
+	// Under load the old Profile content can linger a moment after the URL changes (it also has
+	// a "name" field), so wait for something only the login screen has.
+	await page.getByRole("button", { name: /Let.s go/ }).waitFor();
 	await page.fill("input[name=name]", name);
 	await page.fill("input[name=pin]", "4821");
 	await page.getByRole("button", { name: /Let.s go/ }).click();

@@ -5,12 +5,14 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import {
 	getFeed,
+	getIsAdmin,
 	getLeaderboard,
 	getMyGroups,
 	getRelations,
 	searchProfiles,
 } from "@/lib/friends";
 import { leaveGroup, respondToRequest, sendRequest } from "./actions";
+import { FeedActions } from "./feed-actions";
 import { JoinGroupForm } from "./join-group-form";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
@@ -30,12 +32,13 @@ export default async function FriendsPage({
 	await connection();
 	const { q = "", view: v } = await searchParams;
 	const view = views.find((x) => x.id === v)?.id ?? "feed";
-	const [relations, feed, board, groups, results] = await Promise.all([
+	const [relations, feed, board, groups, results, isAdmin] = await Promise.all([
 		getRelations(),
 		getFeed(),
 		getLeaderboard(),
 		getMyGroups(),
 		q.trim().length >= 2 ? searchProfiles(q.trim()) : [],
+		getIsAdmin(),
 	]);
 
 	return (
@@ -280,6 +283,13 @@ export default async function FriendsPage({
 										timeZone: "America/New_York",
 									})}
 								</p>
+								<FeedActions
+									userQuestId={item.id}
+									counts={item.reactions}
+									mine={item.mine}
+									comments={item.comments}
+									isAdmin={isAdmin}
+								/>
 							</article>
 						);
 					})}
