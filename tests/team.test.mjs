@@ -60,6 +60,13 @@ test("invite a friend, they join, both finish, +5 XP each once", async () => {
 		   order by title limit 1)
 		 where user_id = (select id from profiles where username = '${nameB}') and kind = 'daily'`,
 	);
+	// Both have reminders on (a device that can't be reached), so the invite, joined and
+	// finished pings all run their send code. They must never get in the way of the actions.
+	sql(
+		`insert into push_subscriptions (user_id, endpoint, p256dh, auth)
+		 select id, 'https://127.0.0.1:9/' || username, 'key', 'auth' from profiles
+		 where username in ('${nameA}', '${nameB}')`,
+	);
 	await b.reload();
 	await b.waitForLoadState("networkidle");
 

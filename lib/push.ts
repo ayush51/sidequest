@@ -49,3 +49,8 @@ export async function sendPush(userId: string, payload: PushPayload) {
 	);
 	return sent;
 }
+
+// Send a batch of notifications. One failing never stops the others or the action that asked.
+export async function sendPings(pings: { to: string; payload: PushPayload }[]) {
+	await Promise.allSettled(pings.map((p) => sendPush(p.to, p.payload)));
+}

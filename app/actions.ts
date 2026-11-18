@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { sendPush } from "@/lib/push";
+import { sendPings, sendPush } from "@/lib/push";
 import {
 	claimBonus,
 	currentUser,
@@ -11,6 +11,7 @@ import {
 	todayET,
 } from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
+import { teamFinishedPings, teamJoinedPing } from "@/lib/team";
 
 export async function completeQuest(userQuestId: string, photoPath?: string) {
 	const supabase = await createClient();
@@ -18,6 +19,9 @@ export async function completeQuest(userQuestId: string, photoPath?: string) {
 		p_user_quest: userQuestId,
 		p_photo_path: photoPath ?? null,
 	});
+	// Nudge teammates who haven't finished yet.
+	const pings = await teamFinishedPings(userQuestId);
+	if (pings.length) after(() => sendPings(pings));
 	revalidatePath("/");
 }
 
@@ -123,7 +127,12 @@ export async function respondToInvite(
 	});
 	revalidatePath("/");
 	if (error) return { error: "Something went wrong. Try again." };
-	return data?.error ? { error: data.error } : {};
+	if (data?.error) return { error: data.error };
+	if (accept) {
+		const ping = await teamJoinedPing(teamId);
+		if (ping) after(() => sendPings([ping]));
+	}
+	return {};
 }
 
 export type PushResult = { error?: string };

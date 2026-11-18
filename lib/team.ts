@@ -1,3 +1,4 @@
+import type { PushPayload } from "@/lib/push";
 import { currentUser, questSelect, todayET } from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
 
@@ -72,4 +73,72 @@ export async function getTeam() {
 			),
 		})),
 	};
+}
+
+type Ping = { to: string; payload: PushPayload };
+
+async function myName(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	uid: string,
+) {
+	const { data } = await supabase
+		.from("profiles")
+		.select("display_name, username")
+		.eq("id", uid)
+		.maybeSingle();
+	return data?.display_name ?? data?.username ?? "A friend";
+}
+
+// I just joined a team quest: tell whoever invited me.
+export async function teamJoinedPing(teamId: string): Promise<Ping | null> {
+	const { supabase, uid } = await currentUser();
+	const { data: team } = await supabase
+		.from("team_quests")
+		.select("inviter_id, quests(title)")
+		.eq("id", teamId)
+		.eq("invitee_id", uid)
+		.maybeSingle();
+	if (!team) return null;
+	const quest = Array.isArray(team.quests) ? team.quests[0] : team.quests;
+	return {
+		to: team.inviter_id,
+		payload: {
+			title: `${await myName(supabase, uid)} joined your team`,
+			body: `${quest?.title ?? "Your quest"}. Finish it together for +5 XP each.`,
+			url: "/",
+			tag: "team-joined",
+		},
+	};
+}
+
+// I just finished a quest. Teammates who haven't finished theirs yet get a nudge. If they had,
+// the bonus was already paid (bonus_paid) and there's nobody left to nudge.
+export async function teamFinishedPings(userQuestId: string): Promise<Ping[]> {
+	const { supabase, uid } = await currentUser();
+	const { data: mine } = await supabase
+		.from("user_quests")
+		.select("quest_id, quests(title)")
+		.eq("id", userQuestId)
+		.eq("user_id", uid)
+		.maybeSingle();
+	if (!mine) return [];
+	const { data: teams } = await supabase
+		.from("team_quests")
+		.select("inviter_id, invitee_id")
+		.eq("quest_id", mine.quest_id)
+		.eq("status", "accepted")
+		.eq("bonus_paid", false)
+		.or(`inviter_id.eq.${uid},invitee_id.eq.${uid}`);
+	if (!teams?.length) return [];
+	const quest = Array.isArray(mine.quests) ? mine.quests[0] : mine.quests;
+	const name = await myName(supabase, uid);
+	return teams.map((t) => ({
+		to: t.inviter_id === uid ? t.invitee_id : t.inviter_id,
+		payload: {
+			title: `${name} finished ${quest?.title ?? "your quest"}`,
+			body: "Your turn. Finish it and you each get +5 XP.",
+			url: "/",
+			tag: "team-finished",
+		},
+	}));
 }

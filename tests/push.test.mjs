@@ -109,6 +109,14 @@ test("each device belongs to one person, and finished people are not reminded", 
 	const dry = async () =>
 		(await (await cron(`?dry=1&only=${b.id}`)).json()).recipients;
 	assert.equal(await dry(), 1);
+
+	// A live streak changes the wording: finished yesterday, 3 days running.
+	sql(
+		`update profiles set current_streak = 3,
+		   last_completed_on = (now() at time zone 'America/New_York')::date - 1 where id = '${b.id}'`,
+	);
+	const preview = (await (await cron(`?dry=1&only=${b.id}`)).json()).preview;
+	assert.match(preview.title, /Keep your 3-day streak alive/);
 	sql(
 		`insert into user_quests (user_id, quest_id, assigned_on, status, kind)
 		 select '${b.id}', id, (now() at time zone 'America/New_York')::date, 'completed', 'daily'
