@@ -48,6 +48,11 @@ test("new user: signup, interests, first quest, 5 rerolls, complete, bonuses, ed
 	assert.equal(await page.getByText("No quests available").count(), 0);
 	assert.ok((await page.locator("h2").first().textContent())?.length > 0);
 
+	// The bottom of Today: a way to suggest a quest, and the credit line.
+	const suggest = page.getByRole("link", { name: /Suggest a quest/ });
+	assert.equal(await suggest.getAttribute("href"), "/suggest");
+	await page.getByText("Designed and developed by").waitFor();
+
 	// Five free rerolls, each swapping the quest; then the button disappears.
 	await page.getByRole("button", { name: /Reroll \(5 left\)/ }).waitFor();
 	for (let left = 4; left >= 0; left--) {

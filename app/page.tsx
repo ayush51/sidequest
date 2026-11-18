@@ -1,7 +1,18 @@
-import { Flame, MapPin, Plus, Trophy, Users, Wallet, Zap } from "lucide-react";
+import {
+	Flame,
+	Lightbulb,
+	MapPin,
+	Plus,
+	Trophy,
+	Users,
+	Wallet,
+	Zap,
+} from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Button } from "@/components/ui/button";
+import { Credit } from "@/components/credit";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { areaLabel } from "@/lib/areas";
 import {
 	BONUS_LIMIT,
@@ -228,6 +239,14 @@ export default async function Home() {
 					)}
 				</section>
 			)}
+			<Link
+				href="/suggest"
+				className={buttonVariants({ variant: "outline", size: "lg" })}
+			>
+				<Lightbulb className="size-5" />
+				Got an idea? Suggest a quest
+			</Link>
+			<Credit />
 		</main>
 	);
 }

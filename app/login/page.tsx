@@ -2,6 +2,7 @@
 
 import { Compass } from "lucide-react";
 import { useActionState, useState } from "react";
+import { Credit } from "@/components/credit";
 import { Button } from "@/components/ui/button";
 import { authenticate } from "./actions";
 
@@ -74,6 +75,7 @@ export default function LoginPage() {
 					{signup ? "Have an account? Sign in" : "New here? Create account"}
 				</Button>
 			</form>
+			<Credit />
 		</main>
 	);
 }
