@@ -45,6 +45,17 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ```
 
+### Sign in from The Square (optional)
+
+Members of The Square (the building app at the-square.app) can open SideQuest from its app menu and arrive signed in. The first time, they link the SideQuest account they already have (name and code, once) or create one; after that, every tap goes straight in. It's off until both of these are set as server-only environment variables (in Vercel, not `NEXT_PUBLIC_`):
+
+```bash
+SQUARE_SSO_SECRET=...          # shared with The Square (its sidequestSecret)
+SUPABASE_SERVICE_ROLE_KEY=...  # from Supabase: Project Settings > API
+```
+
+The code is `lib/square-pass.ts` (checks a pass), `app/sso/route.ts` (spends it once and signs in a linked person) and `app/link/` (link or create), with the tables in `supabase/migrations/0015_square_links.sql`.
+
 The schema lives in `supabase/migrations/`. Apply it to your own Supabase project with `supabase db push --linked`.
 
 | Command                        | What it does                                                              |

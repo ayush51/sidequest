@@ -25,7 +25,10 @@ export async function proxy(request: NextRequest) {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	if (!user && !request.nextUrl.pathname.startsWith("/login")) {
+	// /sso and /link are how a member arrives from The Square (lib/square-pass.ts):
+	// signed out by definition, and they sign themselves in.
+	const open = ["/login", "/sso", "/link"];
+	if (!user && !open.some((p) => request.nextUrl.pathname.startsWith(p))) {
 		return NextResponse.redirect(new URL("/login", request.url));
 	}
 	return response;
