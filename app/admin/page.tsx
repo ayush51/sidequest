@@ -29,7 +29,7 @@ export default async function AdminPage() {
 		supabase
 			.from("quests")
 			.select(
-				"id, title, description, area, cost, difficulty, points, interests(label), profiles(display_name, username)",
+				"id, title, description, area, cost, difficulty, points, interests(label), profiles!author_id(display_name, username)",
 			)
 			.eq("status", "pending")
 			.order("created_at"),

@@ -27,7 +27,7 @@ after(async () => {
 
 const path = () => new URL(page.url()).pathname;
 
-test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, edit", async () => {
+test("new user: signup, interests, first quest, 5 rerolls, complete, bonuses, edit", async () => {
 	await page.goto(`${BASE}/login`);
 	await page.getByRole("button", { name: /Create account/ }).click();
 	await page.fill("input[name=name]", name);
@@ -48,9 +48,9 @@ test("new user: signup, interests, first quest, 3 rerolls, complete, bonuses, ed
 	assert.equal(await page.getByText("No quests available").count(), 0);
 	assert.ok((await page.locator("h2").first().textContent())?.length > 0);
 
-	// Three free rerolls, each swapping the quest; then the button disappears.
-	await page.getByRole("button", { name: /Reroll \(3 left\)/ }).waitFor();
-	for (let left = 2; left >= 0; left--) {
+	// Five free rerolls, each swapping the quest; then the button disappears.
+	await page.getByRole("button", { name: /Reroll \(5 left\)/ }).waitFor();
+	for (let left = 4; left >= 0; left--) {
 		const title = await page.locator("h2").first().textContent();
 		await page.getByRole("button", { name: /Reroll/ }).click();
 		await page.waitForFunction(

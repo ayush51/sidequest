@@ -1,12 +1,4 @@
-import {
-	Flame,
-	MapPin,
-	Plus,
-	Shuffle,
-	Trophy,
-	Wallet,
-	Zap,
-} from "lucide-react";
+import { Flame, MapPin, Plus, Trophy, Wallet, Zap } from "lucide-react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
@@ -15,13 +7,17 @@ import {
 	BONUS_LIMIT,
 	FREE_REROLLS,
 	getBonuses,
+	getCategories,
 	getInterests,
 	getStats,
 	getTodayQuest,
+	getVotes,
 	PHOTO_BONUS,
 } from "@/lib/quests";
-import { claimBonusQuest, reroll } from "./actions";
+import { claimBonusQuest } from "./actions";
 import { QuestComplete } from "./quest-complete";
+import { QuestVote } from "./quest-vote";
+import { RerollForm } from "./reroll-form";
 
 const one = <T,>(x: T | T[] | null | undefined) =>
 	Array.isArray(x) ? x[0] : x;
@@ -31,11 +27,15 @@ export default async function Home() {
 	await connection();
 	const interests = await getInterests();
 	if (interests.length === 0) redirect("/interests");
-	const [today, stats, bonuses] = await Promise.all([
+	const [today, stats, bonuses, categories] = await Promise.all([
 		getTodayQuest(interests),
 		getStats(),
 		getBonuses(),
+		getCategories(),
 	]);
+	const votes = await getVotes(
+		[today?.quest_id, ...bonuses.map((b) => b.quest_id)].filter(Boolean),
+	);
 	const quest = Array.isArray(today?.quests) ? today.quests[0] : today?.quests;
 	const emoji = one(quest?.interests)?.emoji;
 	const done = today?.status === "completed";
@@ -111,18 +111,12 @@ export default async function Home() {
 						earned={quest.points + (today.photo_path ? PHOTO_BONUS : 0)}
 					/>
 					{!done && rerollsLeft > 0 && (
-						<form action={reroll}>
-							<Button
-								type="submit"
-								variant="ghost"
-								size="sm"
-								className="w-full text-muted-foreground"
-							>
-								<Shuffle className="size-4" />
-								Not feeling it? Reroll ({rerollsLeft} left)
-							</Button>
-						</form>
+						<RerollForm left={rerollsLeft} categories={categories} />
 					)}
+					<QuestVote
+						questId={today.quest_id}
+						vote={votes.get(today.quest_id) ?? 0}
+					/>
 				</section>
 			) : (
 				<p className="text-muted-foreground">No quests available yet.</p>
@@ -150,6 +144,10 @@ export default async function Home() {
 									bonus={PHOTO_BONUS}
 									done={b.status === "completed"}
 									earned={bq.points + (b.photo_path ? PHOTO_BONUS : 0)}
+								/>
+								<QuestVote
+									questId={b.quest_id}
+									vote={votes.get(b.quest_id) ?? 0}
 								/>
 							</div>
 						) : null;

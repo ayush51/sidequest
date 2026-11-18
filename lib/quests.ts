@@ -28,11 +28,11 @@ export async function getInterests() {
 export const BONUS_LIMIT = 2;
 const BONUS_MAX_POINTS = 10;
 
-// Must match reroll_daily() in migration 0010.
-export const FREE_REROLLS = 3;
+// Must match reroll_daily() in migration 0016.
+export const FREE_REROLLS = 5;
 
 const questSelect =
-	"id, status, photo_path, rerolls, quests(title, description, area, cost, points, interests(emoji))";
+	"id, quest_id, status, photo_path, rerolls, quests(title, description, area, cost, points, interests(emoji))";
 
 const one = <T>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);
 
@@ -40,12 +40,14 @@ type CategoryRows =
 	| { quests: { category: string } | { category: string }[] | null }[]
 	| null;
 
-// How the user's history nudges each category: +0.25 per finished quest, -0.4 per skip.
-async function categoryTilt(
+// What the user's history says about their taste. Each category is nudged by +0.25 per
+// finished quest, -0.4 per skip, +0.35 per thumbs up and -0.6 per thumbs down. Thumbs-downed
+// quests are returned too: they are never picked again.
+async function taste(
 	supabase: Awaited<ReturnType<typeof createClient>>,
 	uid: string,
 ) {
-	const [finished, skipped] = await Promise.all([
+	const [finished, skipped, votes] = await Promise.all([
 		supabase
 			.from("user_quests")
 			.select("quests(category)")
@@ -54,6 +56,10 @@ async function categoryTilt(
 		supabase
 			.from("quest_rerolls")
 			.select("quests(category)")
+			.eq("user_id", uid),
+		supabase
+			.from("quest_feedback")
+			.select("quest_id, vote, quests(category)")
 			.eq("user_id", uid),
 	]);
 	const tilt = new Map<string, number>();
@@ -65,16 +71,21 @@ async function categoryTilt(
 	};
 	add(finished.data, 0.25);
 	add(skipped.data, -0.4);
-	return tilt;
+	add(votes.data?.filter((v) => v.vote > 0) ?? null, 0.35);
+	add(votes.data?.filter((v) => v.vote < 0) ?? null, -0.6);
+	const disliked = new Set(
+		(votes.data ?? []).filter((v) => v.vote < 0).map((v) => v.quest_id),
+	);
+	return { tilt, disliked };
 }
 
-// Random quest the user hasn't had yet. Quests in their interests are 3x as likely,
-// scaled by what they finish and skip (kept between 0.25x and 2x so one habit can't dominate).
+// Random quest the user hasn't had yet (and hasn't thumbs-downed). Quests in their interests
+// are 3x as likely, scaled by their taste (kept between 0.25x and 2x so one habit can't dominate).
 async function pickQuest(
 	supabase: Awaited<ReturnType<typeof createClient>>,
 	uid: string,
 	interests: string[],
-	opts: { maxPoints?: number; excludeIds?: string[] } = {},
+	opts: { maxPoints?: number; excludeIds?: string[]; category?: string } = {},
 ) {
 	// Explicit status filter: RLS also lets authors see their own pending suggestions and the admin see everything.
 	let pool = supabase
@@ -82,14 +93,18 @@ async function pickQuest(
 		.select("id, category")
 		.eq("status", "approved");
 	if (opts.maxPoints) pool = pool.lte("points", opts.maxPoints);
-	const [done, all, tilt] = await Promise.all([
+	if (opts.category) pool = pool.eq("category", opts.category);
+	const [done, all, { tilt, disliked }] = await Promise.all([
 		supabase.from("user_quests").select("quest_id").eq("user_id", uid),
 		pool,
-		categoryTilt(supabase, uid),
+		taste(supabase, uid),
 	]);
 	const doneIds = new Set((done.data ?? []).map((r) => r.quest_id));
 	const choices = (all.data ?? []).filter(
-		(q) => !doneIds.has(q.id) && !opts.excludeIds?.includes(q.id),
+		(q) =>
+			!doneIds.has(q.id) &&
+			!disliked.has(q.id) &&
+			!opts.excludeIds?.includes(q.id),
 	);
 	if (choices.length === 0) return null;
 
@@ -143,7 +158,8 @@ export async function getTodayQuest(interests: string[]) {
 	).data;
 }
 
-export async function rerollToday(interests: string[]) {
+// Swap today's quest for another, optionally from one category. False if nothing was left to pick.
+export async function rerollToday(interests: string[], category?: string) {
 	const { supabase, uid } = await currentUser();
 	// Skip the current quest and anything skipped in the last 24h (the database
 	// only enforces "not today", so this is a safe superset).
@@ -166,8 +182,33 @@ export async function rerollToday(interests: string[]) {
 		...(current.data ? [current.data.quest_id] : []),
 		...(skipped.data ?? []).map((r) => r.quest_id),
 	];
-	const pick = await pickQuest(supabase, uid, interests, { excludeIds });
-	if (pick) await supabase.rpc("reroll_daily", { p_new_quest: pick });
+	const pick = await pickQuest(supabase, uid, interests, {
+		excludeIds,
+		category,
+	});
+	if (!pick) return false;
+	const { error } = await supabase.rpc("reroll_daily", { p_new_quest: pick });
+	return !error;
+}
+
+export async function getCategories() {
+	const supabase = await createClient();
+	const { data } = await supabase
+		.from("interests")
+		.select("slug, label")
+		.order("label");
+	return data ?? [];
+}
+
+// The user's thumbs on these quests: quest id -> 1 (up) or -1 (down).
+export async function getVotes(questIds: string[]) {
+	const { supabase, uid } = await currentUser();
+	const { data } = await supabase
+		.from("quest_feedback")
+		.select("quest_id, vote")
+		.eq("user_id", uid)
+		.in("quest_id", questIds);
+	return new Map((data ?? []).map((r) => [r.quest_id, r.vote as number]));
 }
 
 export async function claimBonus(interests: string[]) {

@@ -13,8 +13,34 @@ export async function completeQuest(userQuestId: string, photoPath?: string) {
 	revalidatePath("/");
 }
 
-export async function reroll() {
-	await rerollToday(await getInterests());
+export type RerollState = { error?: string };
+
+export async function reroll(
+	_prev: RerollState,
+	formData: FormData,
+): Promise<RerollState> {
+	const category = String(formData.get("category") ?? "") || undefined;
+	const swapped = await rerollToday(await getInterests(), category);
+	revalidatePath("/");
+	return swapped
+		? {}
+		: {
+				error: category
+					? "No more quests in that category. Try another."
+					: "Couldn't find another quest. Try again.",
+			};
+}
+
+// 1 = thumbs up, -1 = thumbs down, 0 = take the vote back.
+export async function voteQuest(questId: string, vote: 1 | -1 | 0) {
+	const supabase = await createClient();
+	if (vote === 0) {
+		await supabase.from("quest_feedback").delete().eq("quest_id", questId);
+	} else {
+		await supabase
+			.from("quest_feedback")
+			.upsert({ quest_id: questId, vote }, { onConflict: "user_id,quest_id" });
+	}
 	revalidatePath("/");
 }
 
