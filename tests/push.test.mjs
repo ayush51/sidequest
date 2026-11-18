@@ -115,6 +115,11 @@ test("each device belongs to one person, and finished people are not reminded", 
 		 from quests where status = 'approved' limit 1`,
 	);
 	assert.equal(await dry(), 0, "no reminder once today's quest is done");
+	assert.equal(
+		(await (await cron(`?dry=1&force=1&only=${b.id}`)).json()).recipients,
+		1,
+		"force sends to people who finished too",
+	);
 
 	// Turning reminders off removes the device.
 	assert.ifError(

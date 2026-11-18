@@ -7,8 +7,8 @@ const one = <T>(x: T | T[] | null | undefined) => (Array.isArray(x) ? x[0] : x);
 
 // Vercel calls this once a day (see vercel.json) with `Authorization: Bearer $CRON_SECRET`.
 // It reminds everyone who turned reminders on and hasn't finished today's quest.
-// `?only=<user id>` limits it to one person and `?dry=1` counts instead of sending, which is
-// also how to send yourself a test notification.
+// `?only=<user id>` limits it to one person, `?dry=1` counts instead of sending, and `?force=1`
+// sends even to people who already finished (to test a phone).
 export async function GET(request: NextRequest) {
 	const secret = process.env.CRON_SECRET;
 	if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
 	}
 	const only = request.nextUrl.searchParams.get("only");
 	const dry = request.nextUrl.searchParams.get("dry") === "1";
+	const force = request.nextUrl.searchParams.get("force") === "1";
 
 	const admin = createAdminClient();
 	let subscribed = admin.from("push_subscriptions").select("user_id");
@@ -32,7 +33,9 @@ export async function GET(request: NextRequest) {
 		.eq("kind", "daily")
 		.in("user_id", userIds);
 	const today = new Map((dailies ?? []).map((d) => [d.user_id, d]));
-	const pending = userIds.filter((id) => today.get(id)?.status !== "completed");
+	const pending = userIds.filter(
+		(id) => force || today.get(id)?.status !== "completed",
+	);
 	if (dry) return Response.json({ recipients: pending.length, sent: 0 });
 
 	const sent = await Promise.all(
