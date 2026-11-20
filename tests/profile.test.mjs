@@ -82,11 +82,14 @@ test("profile: name, photo, code change, sign out and back in", async () => {
 		mimeType: "image/jpeg",
 		buffer: Buffer.from(dataUrl.split(",")[1], "base64"),
 	});
+	// The photo uploads to Supabase storage, which can be slow while the whole suite runs at once.
 	const avatar = page.locator('main img[src*="/avatars/"]');
-	await avatar.waitFor();
+	await avatar.waitFor({ timeout: 90_000 });
 	await page.waitForFunction(
 		() =>
 			document.querySelector('main img[src*="/avatars/"]')?.naturalWidth > 0,
+		undefined,
+		{ timeout: 60_000 },
 	);
 
 	await page.getByRole("link", { name: "Social" }).click();

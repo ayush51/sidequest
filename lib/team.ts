@@ -1,3 +1,4 @@
+import type { NotificationType } from "@/lib/notifications";
 import type { PushPayload } from "@/lib/push";
 import { currentUser, questSelect, todayET } from "@/lib/quests";
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +76,7 @@ export async function getTeam() {
 	};
 }
 
-type Ping = { to: string; payload: PushPayload };
+type Ping = { to: string; payload: PushPayload; type: NotificationType };
 
 async function myName(
 	supabase: Awaited<ReturnType<typeof createClient>>,
@@ -101,6 +102,7 @@ export async function teamJoinedPing(teamId: string): Promise<Ping | null> {
 	if (!team) return null;
 	const quest = Array.isArray(team.quests) ? team.quests[0] : team.quests;
 	return {
+		type: "team",
 		to: team.inviter_id,
 		payload: {
 			title: `${await myName(supabase, uid)} joined your team`,
@@ -133,6 +135,7 @@ export async function teamFinishedPings(userQuestId: string): Promise<Ping[]> {
 	const quest = Array.isArray(mine.quests) ? mine.quests[0] : mine.quests;
 	const name = await myName(supabase, uid);
 	return teams.map((t) => ({
+		type: "team" as const,
 		to: t.inviter_id === uid ? t.invitee_id : t.inviter_id,
 		payload: {
 			title: `${name} finished ${quest?.title ?? "your quest"}`,

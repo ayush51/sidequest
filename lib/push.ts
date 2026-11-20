@@ -1,4 +1,5 @@
 import * as webpush from "web-push";
+import type { NotificationType } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PushPayload = {
@@ -9,9 +10,13 @@ export type PushPayload = {
 };
 
 // Sends a notification to every device a person turned reminders on for, and returns how many
-// went out. A device the browser says is gone (404 or 410) is forgotten. Does nothing until the
-// VAPID keys are set.
-export async function sendPush(userId: string, payload: PushPayload) {
+// went out. Skips it if they muted that type. A device the browser says is gone (404 or 410) is
+// forgotten. Does nothing until the VAPID keys are set.
+export async function sendPush(
+	userId: string,
+	payload: PushPayload,
+	type: NotificationType,
+) {
 	const { VAPID_SUBJECT, NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } =
 		process.env;
 	if (!VAPID_SUBJECT || !NEXT_PUBLIC_VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
@@ -24,6 +29,14 @@ export async function sendPush(userId: string, payload: PushPayload) {
 	);
 
 	const admin = createAdminClient();
+	const { data: muted } = await admin
+		.from("muted_notifications")
+		.select("type")
+		.eq("user_id", userId)
+		.eq("type", type)
+		.maybeSingle();
+	if (muted) return 0;
+
 	const { data: devices } = await admin
 		.from("push_subscriptions")
 		.select("id, endpoint, p256dh, auth")
@@ -51,6 +64,8 @@ export async function sendPush(userId: string, payload: PushPayload) {
 }
 
 // Send a batch of notifications. One failing never stops the others or the action that asked.
-export async function sendPings(pings: { to: string; payload: PushPayload }[]) {
-	await Promise.allSettled(pings.map((p) => sendPush(p.to, p.payload)));
+export async function sendPings(
+	pings: { to: string; payload: PushPayload; type: NotificationType }[],
+) {
+	await Promise.allSettled(pings.map((p) => sendPush(p.to, p.payload, p.type)));
 }

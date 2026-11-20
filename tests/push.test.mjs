@@ -41,6 +41,8 @@ after(async () => {
 	}
 });
 
+const rows = (query) => JSON.parse(sql(query)).rows;
+
 const cron = (query = "", secret = env("CRON_SECRET")) =>
 	fetch(`${BASE}/api/cron/reminder${query}`, {
 		headers: secret ? { authorization: `Bearer ${secret}` } : {},
@@ -117,6 +119,18 @@ test("each device belongs to one person, and finished people are not reminded", 
 	);
 	const preview = (await (await cron(`?dry=1&only=${b.id}`)).json()).preview;
 	assert.match(preview.title, /Keep your 3-day streak alive/);
+
+	// Muting the daily reminder takes B off the list; unmuting puts B back.
+	assert.ifError(
+		(await b.client.from("muted_notifications").insert({ type: "reminder" }))
+			.error,
+	);
+	assert.equal(await dry(), 0, "muted people are not reminded");
+	assert.ifError(
+		(await b.client.from("muted_notifications").delete().eq("type", "reminder"))
+			.error,
+	);
+	assert.equal(await dry(), 1);
 	sql(
 		`insert into user_quests (user_id, quest_id, assigned_on, status, kind)
 		 select '${b.id}', id, (now() at time zone 'America/New_York')::date, 'completed', 'daily'
@@ -178,4 +192,32 @@ test("the opt-in card can be dismissed and the Profile switch shows", async () =
 	await page.getByRole("link", { name: "Profile" }).click();
 	await page.getByText("Daily reminder is off.").waitFor();
 	await page.getByRole("button", { name: "Turn on" }).waitFor();
+
+	// The per-type switches: on by default, saved when flipped, and they persist.
+	const muted = () =>
+		rows(
+			`select 1 from muted_notifications where type = 'reminder'
+			 and user_id = (select id from profiles where username = '${name}')`,
+		).length;
+	const settle = async (expected) => {
+		for (let i = 0; i < 12 && muted() !== expected; i++) {
+			await page.waitForTimeout(500);
+		}
+		assert.equal(muted(), expected);
+	};
+	await page.waitForLoadState("networkidle");
+	const reminder = page.getByRole("switch", { name: "Daily reminder" });
+	assert.equal(await reminder.getAttribute("aria-checked"), "true");
+	await reminder.click();
+	await settle(1);
+	await page.reload();
+	await page.waitForLoadState("networkidle");
+	assert.equal(
+		await page
+			.getByRole("switch", { name: "Daily reminder" })
+			.getAttribute("aria-checked"),
+		"false",
+	);
+	await page.getByRole("switch", { name: "Daily reminder" }).click();
+	await settle(0);
 });

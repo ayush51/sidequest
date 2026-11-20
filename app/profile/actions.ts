@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { credentials } from "@/lib/credentials";
+import { isNotificationType } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
 
 export type FormState = { error?: string; saved?: boolean };
@@ -69,4 +70,18 @@ export async function changeCode(
 		password: credentials(profile.username, next).password,
 	});
 	return error ? { error: "Couldn't change your code." } : { saved: true };
+}
+
+// Mute or unmute one kind of notification for me (row-level security limits it to my own rows).
+export async function setNotificationMuted(type: string, muted: boolean) {
+	if (!isNotificationType(type)) return;
+	const supabase = await createClient();
+	if (muted) {
+		await supabase
+			.from("muted_notifications")
+			.upsert({ type }, { onConflict: "user_id,type", ignoreDuplicates: true });
+	} else {
+		await supabase.from("muted_notifications").delete().eq("type", type);
+	}
+	revalidatePath("/profile");
 }

@@ -104,6 +104,7 @@ export async function addComment(
 			.maybeSingle();
 		const quest = Array.isArray(post.quests) ? post.quests[0] : post.quests;
 		const ping = {
+			type: "comment" as const,
 			to: post.user_id as string,
 			payload: {
 				title: `${me?.display_name ?? me?.username ?? "Someone"} commented on ${quest?.title ?? "your quest"}`,

@@ -41,8 +41,15 @@ export async function GET(request: NextRequest) {
 			.in("id", userIds),
 	]);
 	const dailyOf = new Map((dailies ?? []).map((d) => [d.user_id, d]));
+	const { data: mutedRows } = await admin
+		.from("muted_notifications")
+		.select("user_id")
+		.eq("type", "reminder")
+		.in("user_id", userIds);
+	const muted = new Set((mutedRows ?? []).map((m) => m.user_id));
 	const pending = userIds.filter(
-		(id) => force || dailyOf.get(id)?.status !== "completed",
+		(id) =>
+			!muted.has(id) && (force || dailyOf.get(id)?.status !== "completed"),
 	);
 
 	// A streak is alive if they finished yesterday (see getStats in lib/quests.ts).
@@ -85,7 +92,7 @@ export async function GET(request: NextRequest) {
 		});
 	}
 	const sent = await Promise.all(
-		pending.map((id) => sendPush(id, payloadFor(id))),
+		pending.map((id) => sendPush(id, payloadFor(id), "reminder")),
 	);
 	return Response.json({
 		recipients: pending.length,

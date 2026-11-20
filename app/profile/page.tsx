@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../login/actions";
 import { NotifyToggle } from "../notify-toggle";
 import { Achievements } from "./achievements";
+import { NotificationTypes } from "./notification-types";
 import { AvatarEditor, CodeForm, NameForm } from "./profile-forms";
 
 export default async function ProfilePage() {
@@ -17,6 +18,12 @@ export default async function ProfilePage() {
 		.select("username, display_name, avatar_url, is_admin")
 		.eq("id", uid)
 		.single();
+
+	const { data: mutedRows } = await supabase
+		.from("muted_notifications")
+		.select("type")
+		.eq("user_id", uid);
+	const muted = (mutedRows ?? []).map((r) => r.type);
 
 	const username = profile?.username ?? "";
 	return (
@@ -32,6 +39,7 @@ export default async function ProfilePage() {
 			/>
 			<Achievements />
 			<NotifyToggle variant="row" />
+			<NotificationTypes muted={muted} />
 			<NameForm name={profile?.display_name ?? username} />
 			<CodeForm />
 			<div className="flex flex-col gap-2">

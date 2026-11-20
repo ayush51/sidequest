@@ -103,12 +103,16 @@ export async function inviteToTeam(inviteeId: string): Promise<TeamResult> {
 	const quest = Array.isArray(daily?.quests) ? daily.quests[0] : daily?.quests;
 	after(async () => {
 		try {
-			await sendPush(inviteeId, {
-				title: `${me?.display_name ?? me?.username ?? "A friend"} invited you`,
-				body: `${quest?.title ?? "Today's quest"}. Finish it together for +5 XP each.`,
-				url: "/",
-				tag: "team-invite",
-			});
+			await sendPush(
+				inviteeId,
+				{
+					title: `${me?.display_name ?? me?.username ?? "A friend"} invited you`,
+					body: `${quest?.title ?? "Today's quest"}. Finish it together for +5 XP each.`,
+					url: "/",
+					tag: "team-invite",
+				},
+				"team",
+			);
 		} catch {
 			// The invite already went through.
 		}
